@@ -1,0 +1,315 @@
+{% extends "layout.html" %}
+
+{% block title %}Scanner - Gestion d'Inventaire{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1><i class="bi bi-upc-scan"></i> Scanner un Code-barres</h1>
+        <p class="text-muted">Scannez un code-barres avec votre douchette ou utilisez la caméra de votre appareil.</p>
+    </div>
+</div>
+
+<div class="row">
+    <!-- Saisie manuelle -->
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-keyboard"></i> Saisie Manuelle</h5>
+            </div>
+            <div class="card-body">
+                <form id="manualScanForm">
+                    <div class="mb-3">
+                        <label for="manualBarcode" class="form-label">Code-barres</label>
+                        <div class="input-group">
+                            <input type="text" 
+                                   class="form-control form-control-lg" 
+                                   id="manualBarcode" 
+                                   placeholder="Scannez ou tapez le code-barres..."
+                                   autofocus>
+                            <button class="btn btn-primary" type="submit">
+                                <i class="bi bi-search"></i> Traiter
+                            </button>
+                        </div>
+                        <div class="form-text">
+                            Utilisez votre douchette USB/Bluetooth ou tapez manuellement le code.
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scan par caméra -->
+    <div class="col-lg-6 mb-4">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-camera"></i> Scan par Caméra</h5>
+            </div>
+            <div class="card-body">
+                <div class="text-center">
+                    <button id="startCamera" class="btn btn-success btn-lg mb-3">
+                        <i class="bi bi-camera-video"></i> Démarrer la Caméra
+                    </button>
+                    <button id="stopCamera" class="btn btn-danger btn-lg mb-3" style="display: none;">
+                        <i class="bi bi-camera-video-off"></i> Arrêter la Caméra
+                    </button>
+                </div>
+                
+                <!-- Zone de scan caméra -->
+                <div id="scanner-container" style="display: none;">
+                    <div id="interactive" class="viewport"></div>
+                </div>
+                
+                <div class="form-text text-center">
+                    Pointez la caméra vers le code-barres pour le scanner automatiquement.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Zone de résultats -->
+<div class="row">
+    <div class="col-12">
+        <div id="scanResults"></div>
+    </div>
+</div>
+
+<!-- Historique des scans -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="bi bi-clock-history"></i> Historique des Scans</h5>
+            </div>
+            <div class="card-body">
+                <div id="scanHistory">
+                    <p class="text-muted text-center">Aucun scan effectué pour le moment.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const manualForm = document.getElementById('manualScanForm');
+    const manualBarcode = document.getElementById('manualBarcode');
+    const startCameraBtn = document.getElementById('startCamera');
+    const stopCameraBtn = document.getElementById('stopCamera');
+    const scannerContainer = document.getElementById('scanner-container');
+    const scanResults = document.getElementById('scanResults');
+    const scanHistory = document.getElementById('scanHistory');
+    
+    let isScanning = false;
+    let scanHistoryData = [];
+
+    // Saisie manuelle
+    manualForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        const barcode = manualBarcode.value.trim();
+        if (barcode) {
+            processScan(barcode);
+            manualBarcode.value = '';
+        }
+    });
+
+    // Auto-submit quand on tape dans le champ (simulation douchette)
+    manualBarcode.addEventListener('input', function(e) {
+        // Si le code fait plus de 8 caractères et se termine par Enter, traiter automatiquement
+        if (e.target.value.length >= 8) {
+            setTimeout(() => {
+                if (e.target.value.trim()) {
+                    processScan(e.target.value.trim());
+                    e.target.value = '';
+                }
+            }, 100);
+        }
+    });
+
+    // Démarrer la caméra
+    startCameraBtn.addEventListener('click', function() {
+        startCamera();
+    });
+
+    // Arrêter la caméra
+    stopCameraBtn.addEventListener('click', function() {
+        stopCamera();
+    });
+
+    function startCamera() {
+        if (isScanning) return;
+
+        scannerContainer.style.display = 'block';
+        startCameraBtn.style.display = 'none';
+        stopCameraBtn.style.display = 'inline-block';
+        isScanning = true;
+
+        Quagga.init({
+            inputStream: {
+                name: "Live",
+                type: "LiveStream",
+                target: document.querySelector('#interactive'),
+                constraints: {
+                    width: 640,
+                    height: 480,
+                    facingMode: "environment"
+                }
+            },
+            decoder: {
+                readers: [
+                    "code_128_reader",
+                    "ean_reader",
+                    "ean_8_reader",
+                    "code_39_reader",
+                    "code_39_vin_reader",
+                    "codabar_reader",
+                    "upc_reader",
+                    "upc_e_reader",
+                    "i2of5_reader"
+                ]
+            }
+        }, function(err) {
+            if (err) {
+                console.log(err);
+                showAlert('Erreur lors de l\'initialisation de la caméra: ' + err.message, 'danger');
+                stopCamera();
+                return;
+            }
+            Quagga.start();
+        });
+
+        Quagga.onDetected(function(data) {
+            const code = data.codeResult.code;
+            processScan(code);
+            // Arrêter temporairement pour éviter les scans multiples
+            setTimeout(() => {
+                if (isScanning) {
+                    Quagga.start();
+                }
+            }, 2000);
+        });
+    }
+
+    function stopCamera() {
+        if (!isScanning) return;
+
+        Quagga.stop();
+        scannerContainer.style.display = 'none';
+        startCameraBtn.style.display = 'inline-block';
+        stopCameraBtn.style.display = 'none';
+        isScanning = false;
+    }
+
+    function processScan(barcode) {
+        // Afficher un indicateur de chargement
+        showAlert('Traitement du code-barres: ' + barcode + '...', 'info');
+
+        fetch('/api/scan', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ code_barres: barcode })
+        })
+        .then(response => response.json())
+        .then(data => {
+            // Effacer les anciens résultats
+            scanResults.innerHTML = '';
+            
+            if (data.success) {
+                showAlert(data.message, data.alert_type);
+                
+                // Ajouter à l'historique
+                addToHistory(barcode, data.produit, true);
+            } else {
+                showAlert(data.message, 'danger');
+                addToHistory(barcode, null, false);
+            }
+        })
+        .catch(error => {
+            console.error('Erreur:', error);
+            showAlert('Erreur de communication avec le serveur', 'danger');
+            addToHistory(barcode, null, false);
+        });
+    }
+
+    function showAlert(message, type) {
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${type} alert-dismissible fade show`;
+        alertDiv.innerHTML = `
+            ${message}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        
+        scanResults.innerHTML = '';
+        scanResults.appendChild(alertDiv);
+        
+        // Auto-dismiss après 5 secondes
+        setTimeout(() => {
+            if (alertDiv.parentNode) {
+                alertDiv.remove();
+            }
+        }, 5000);
+    }
+
+    function addToHistory(barcode, produit, success) {
+        const timestamp = new Date().toLocaleString('fr-FR');
+        const historyItem = {
+            timestamp,
+            barcode,
+            produit,
+            success
+        };
+        
+        scanHistoryData.unshift(historyItem);
+        
+        // Garder seulement les 10 derniers scans
+        if (scanHistoryData.length > 10) {
+            scanHistoryData = scanHistoryData.slice(0, 10);
+        }
+        
+        updateHistoryDisplay();
+    }
+
+    function updateHistoryDisplay() {
+        if (scanHistoryData.length === 0) {
+            scanHistory.innerHTML = '<p class="text-muted text-center">Aucun scan effectué pour le moment.</p>';
+            return;
+        }
+
+        let historyHtml = '<div class="list-group">';
+        
+        scanHistoryData.forEach(item => {
+            const statusClass = item.success ? 'success' : 'danger';
+            const statusIcon = item.success ? 'check-circle' : 'x-circle';
+            
+            historyHtml += `
+                <div class="list-group-item">
+                    <div class="d-flex w-100 justify-content-between">
+                        <h6 class="mb-1">
+                            <i class="bi bi-${statusIcon} text-${statusClass}"></i>
+                            ${item.success ? item.produit.nom : 'Produit non trouvé'}
+                        </h6>
+                        <small class="text-muted">${item.timestamp}</small>
+                    </div>
+                    <p class="mb-1">Code-barres: <code>${item.barcode}</code></p>
+                    ${item.success ? `
+                        <small class="text-muted">
+                            Stock: ${item.produit.stock_avant} → ${item.produit.stock_apres} 
+                            (Prix: ${item.produit.prix}€)
+                        </small>
+                    ` : ''}
+                </div>
+            `;
+        });
+        
+        historyHtml += '</div>';
+        scanHistory.innerHTML = historyHtml;
+    }
+});
+</script>
+{% endblock %}
