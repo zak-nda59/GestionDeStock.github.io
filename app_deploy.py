@@ -234,6 +234,152 @@ def ajouter():
     
     return render_template('ajouter_simple.html')
 
+@app.route('/modifier/<int:produit_id>', methods=['GET', 'POST'])
+def modifier(produit_id):
+    """Modifier un produit"""
+    if request.method == 'POST':
+        try:
+            nom = request.form.get('nom', '').strip()
+            code_barres = request.form.get('code_barres', '').strip()
+            prix = float(request.form.get('prix', 0))
+            stock = int(request.form.get('stock', 0))
+            
+            conn = get_connection()
+            cursor = conn.cursor()
+            cursor.execute(
+                'UPDATE produits SET nom=?, code_barres=?, prix=?, stock=? WHERE id=?',
+                (nom, code_barres, prix, stock, produit_id)
+            )
+            conn.commit()
+            conn.close()
+            
+            return redirect(url_for('index'))
+            
+        except Exception as e:
+            print(f"❌ Erreur modification: {e}")
+            return redirect(url_for('index'))
+    
+    # GET - Afficher le formulaire avec les données actuelles
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute('SELECT * FROM produits WHERE id = ?', (produit_id,))
+        produit = cursor.fetchone()
+        conn.close()
+        
+        if not produit:
+            return redirect(url_for('index'))
+            
+        return render_template('modifier_simple.html', produit=produit)
+        
+    except Exception as e:
+        print(f"❌ Erreur chargement produit: {e}")
+        return redirect(url_for('index'))
+
+@app.route('/supprimer/<int:produit_id>')
+def supprimer(produit_id):
+    """Supprimer un produit"""
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute('DELETE FROM produits WHERE id = ?', (produit_id,))
+        conn.commit()
+        conn.close()
+        
+        return redirect(url_for('index'))
+        
+    except Exception as e:
+        print(f"❌ Erreur suppression: {e}")
+        return redirect(url_for('index'))
+
+@app.route('/export/stock-faible')
+def export_stock_faible():
+    """Exporter les articles en stock faible"""
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute('SELECT * FROM produits WHERE stock <= 5 ORDER BY stock ASC, nom')
+        produits = cursor.fetchall()
+        conn.close()
+        
+        # Créer le CSV
+        output = io.StringIO()
+        writer = csv.writer(output)
+        
+        # En-têtes
+        writer.writerow(['ID', 'Nom', 'Code-barres', 'Prix', 'Stock', 'Statut', 'Action Recommandée'])
+        
+        # Données
+        for p in produits:
+            if p['stock'] == 0:
+                statut = "RUPTURE"
+                action = "RÉAPPROVISIONNER URGENT"
+            elif p['stock'] <= 2:
+                statut = "CRITIQUE"
+                action = "Réapprovisionner rapidement"
+            else:
+                statut = "FAIBLE"
+                action = "Prévoir réapprovisionnement"
+                
+            writer.writerow([
+                p['id'], p['nom'], p['code_barres'], 
+                f"{p['prix']:.2f}€", p['stock'], statut, action
+            ])
+        
+        # Préparer la réponse
+        output.seek(0)
+        response = make_response(output.getvalue())
+        response.headers['Content-Type'] = 'text/csv'
+        response.headers['Content-Disposition'] = 'attachment; filename=stock_faible.csv'
+        
+        return response
+        
+    except Exception as e:
+        print(f"❌ Erreur export: {e}")
+        return redirect(url_for('index'))
+
+@app.route('/export/rupture')
+def export_rupture():
+    """Exporter uniquement les articles en rupture"""
+    try:
+        conn = get_connection()
+        cursor = conn.cursor()
+        cursor.execute('SELECT * FROM produits WHERE stock = 0 ORDER BY nom')
+        produits = cursor.fetchall()
+        conn.close()
+        
+        # Créer le CSV
+        output = io.StringIO()
+        writer = csv.writer(output)
+        
+        # En-têtes
+        writer.writerow(['ID', 'Nom', 'Code-barres', 'Prix', 'Stock', 'Action'])
+        
+        # Données
+        for p in produits:
+            writer.writerow([
+                p['id'], p['nom'], p['code_barres'], 
+                f"{p['prix']:.2f}€", p['stock'], "RÉAPPROVISIONNER URGENT"
+            ])
+        
+        # Préparer la réponse
+        output.seek(0)
+        response = make_response(output.getvalue())
+        response.headers['Content-Type'] = 'text/csv'
+        response.headers['Content-Disposition'] = 'attachment; filename=ruptures_stock.csv'
+        
+        return response
+        
+    except Exception as e:
+        print(f"❌ Erreur export rupture: {e}")
+        return redirect(url_for('index'))
+
+# Redirection pour compatibilité
+@app.route('/qr-codes')
+def qr_codes():
+    """Redirection vers codes-barres"""
+    return redirect(url_for('codes_barres'))
+
 if __name__ == '__main__':
     print("🚀 APPLICATION DÉPLOIEMENT - GESTION D'INVENTAIRE")
     print("=" * 50)
