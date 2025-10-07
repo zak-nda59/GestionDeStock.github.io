@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestion d'Inventaire - Simple</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        body { 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+            min-height: 100vh;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        .card { 
+            border: none; 
+            border-radius: 15px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            backdrop-filter: blur(10px);
+            background: rgba(255,255,255,0.95);
+        }
+        .btn { border-radius: 10px; font-weight: 600; }
+        .table th { background: #f8f9fa; font-weight: 700; }
+        .navbar { background: rgba(255,255,255,0.1) !important; backdrop-filter: blur(20px); }
+        .navbar-brand { color: white !important; font-weight: 700; }
+        .nav-link { color: rgba(255,255,255,0.9) !important; font-weight: 600; }
+    </style>
+</head>
+<body>
+    <!-- Navigation Simple -->
+    <nav class="navbar navbar-expand-lg navbar-dark">
+        <div class="container">
+            <a class="navbar-brand" href="/">
+                <i class="bi bi-box-seam me-2"></i>Gestion d'Inventaire Simple
+            </a>
+            <div class="navbar-nav ms-auto">
+                <a class="nav-link" href="/ajouter">
+                    <i class="bi bi-plus-circle me-1"></i>Ajouter
+                </a>
+                <a class="nav-link" href="/scanner">
+                    <i class="bi bi-upc-scan me-1"></i>Scanner
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <!-- Titre Principal -->
+        <div class="text-center mb-4">
+            <h1 class="text-white display-6 fw-bold">
+                <i class="bi bi-box-seam me-3"></i>
+                Mes Produits
+            </h1>
+            <p class="text-white-50">Interface simple et efficace</p>
+        </div>
+
+        <!-- Statistiques Rapides -->
+        <div class="row g-3 mb-4">
+            <div class="col-md-4">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h3 class="text-primary">{{ produits|length }}</h3>
+                        <p class="mb-0">Produits Total</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h3 class="text-success">{{ produits|sum(attribute='stock') }}</h3>
+                        <p class="mb-0">Stock Total</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="card text-center">
+                    <div class="card-body">
+                        <h3 class="text-warning">{{ produits|selectattr('stock', 'lt', 5)|list|length }}</h3>
+                        <p class="mb-0">Stock Faible</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Actions Rapides -->
+        <div class="row g-3 mb-4">
+            <div class="col-lg-2 col-md-4 col-6">
+                <a href="/ajouter" class="btn btn-primary btn-lg w-100">
+                    <i class="bi bi-plus-circle me-2"></i>
+                    Ajouter
+                </a>
+            </div>
+            <div class="col-lg-2 col-md-4 col-6">
+                <a href="/scanner" class="btn btn-success btn-lg w-100">
+                    <i class="bi bi-upc-scan me-2"></i>
+                    Scanner
+                </a>
+            </div>
+            <div class="col-lg-2 col-md-4 col-6">
+                <a href="/codes-barres" class="btn btn-info btn-lg w-100" title="Générer et afficher tous les codes-barres">
+                    <i class="bi bi-upc me-2"></i>
+                    Codes-barres
+                </a>
+            </div>
+            <div class="col-lg-2 col-md-4 col-6">
+                <a href="/export/stock-faible" class="btn btn-warning btn-lg w-100" title="Exporter les articles en stock faible (≤5)">
+                    <i class="bi bi-download me-2"></i>
+                    Stock Faible
+                </a>
+            </div>
+            <div class="col-lg-2 col-md-4 col-6">
+                <a href="/export/rupture" class="btn btn-danger btn-lg w-100" title="Exporter uniquement les articles en rupture (stock = 0)">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    Ruptures
+                </a>
+            </div>
+            <div class="col-lg-2 col-md-4 col-6">
+                <a href="/codes-barres" class="btn btn-secondary btn-lg w-100" onclick="window.open('/codes-barres'); window.print(); return false;" title="Imprimer directement les codes-barres">
+                    <i class="bi bi-printer me-2"></i>
+                    Imprimer
+                </a>
+            </div>
+            <div class="col-lg-2 col-md-4 col-6">
+                <button class="btn btn-success btn-lg w-100" onclick="creerSauvegarde()" title="Créer une sauvegarde de la base de données">
+                    <i class="bi bi-cloud-arrow-down me-2"></i>
+                    Sauvegarder
+                </button>
+            </div>
+        </div>
+
+        <!-- Liste des Produits -->
+        <div class="card">
+            <div class="card-header">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0">
+                        <i class="bi bi-list me-2"></i>
+                        Liste des Produits (<span id="count-total">{{ produits|length }}</span>)
+                    </h5>
+                    <!-- Barre de Recherche -->
+                    <div class="d-flex align-items-center">
+                        <div class="input-group" style="width: 300px;">
+                            <span class="input-group-text">
+                                <i class="bi bi-search"></i>
+                            </span>
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="searchInput" 
+                                   placeholder="Rechercher un produit..."
+                                   autocomplete="off">
+                            <button class="btn btn-outline-secondary" 
+                                    type="button" 
+                                    id="clearSearch"
+                                    title="Effacer la recherche">
+                                <i class="bi bi-x"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                {% if produits %}
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th><i class="bi bi-tag me-1"></i>Nom</th>
+                                    <th><i class="bi bi-upc me-1"></i>Code-barres</th>
+                                    <th><i class="bi bi-currency-euro me-1"></i>Prix</th>
+                                    <th><i class="bi bi-stack me-1"></i>Stock</th>
+                                    <th><i class="bi bi-speedometer2 me-1"></i>Statut</th>
+                                    <th><i class="bi bi-gear me-1"></i>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for produit in produits %}
+                                <tr>
+                                    <td>
+                                        <strong>{{ produit.nom }}</strong>
+                                        <br><small class="text-muted">ID: {{ produit.id }}</small>
+                                    </td>
+                                    <td>
+                                        <code class="bg-light px-2 py-1 rounded">{{ produit.code_barres }}</code>
+                                    </td>
+                                    <td>
+                                        <span class="badge bg-info fs-6">{{ "%.2f"|format(produit.prix) }} €</span>
+                                    </td>
+                                    <td>
+                                        <span class="fs-5 fw-bold">{{ produit.stock }}</span>
+                                    </td>
+                                    <td>
+                                        {% if produit.stock == 0 %}
+                                            <span class="badge bg-danger">
+                                                <i class="bi bi-x-circle me-1"></i>Rupture
+                                            </span>
+                                        {% elif produit.stock < 5 %}
+                                            <span class="badge bg-warning">
+                                                <i class="bi bi-exclamation-triangle me-1"></i>Faible
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-success">
+                                                <i class="bi bi-check-circle me-1"></i>OK
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td>
+                                        <div class="btn-group" role="group">
+                                            <a href="/modifier/{{ produit.id }}" 
+                                               class="btn btn-outline-primary btn-sm"
+                                               title="Modifier">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                            <a href="/supprimer/{{ produit.id }}" 
+                                               class="btn btn-outline-danger btn-sm"
+                                               onclick="return confirm('Supprimer {{ produit.nom }} ?')"
+                                               title="Supprimer">
+                                                <i class="bi bi-trash"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="bi bi-inbox display-1 text-muted"></i>
+                        <h4 class="text-muted mt-3">Aucun produit</h4>
+                        <p class="text-muted">Commencez par ajouter des produits</p>
+                        <a href="/ajouter" class="btn btn-primary">
+                            <i class="bi bi-plus-circle me-2"></i>Ajouter le premier produit
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Info Export -->
+        <div class="mt-4">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <div class="alert alert-info">
+                        <h6><i class="bi bi-upc me-2"></i><strong>Codes-barres</strong></h6>
+                        <p class="mb-1">Génère des codes-barres pour tous les produits</p>
+                        <small>Scannables avec douchette ou caméra</small>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="alert alert-warning">
+                        <h6><i class="bi bi-download me-2"></i><strong>Export Stock Faible</strong></h6>
+                        <p class="mb-1">Exporte tous les articles avec un stock ≤ 5 unités</p>
+                        <small>Format: CSV avec actions recommandées</small>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="alert alert-danger">
+                        <h6><i class="bi bi-exclamation-triangle me-2"></i><strong>Export Ruptures</strong></h6>
+                        <p class="mb-1">Exporte uniquement les articles en rupture (stock = 0)</p>
+                        <small>Format: CSV avec priorité URGENTE</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Debug Info -->
+        <div class="mt-2">
+            <div class="alert alert-info">
+                <strong>Debug:</strong> {{ produits|length }} produits chargés depuis MySQL
+                {% if produits %}
+                    <br><small>Produits: 
+                    {% for p in produits %}{{ p.nom }}{% if not loop.last %}, {% endif %}{% endfor %}
+                    </small>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    
+    <!-- Script de Recherche -->
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const searchInput = document.getElementById('searchInput');
+            const clearButton = document.getElementById('clearSearch');
+            const table = document.querySelector('table tbody');
+            const countTotal = document.getElementById('count-total');
+            const totalProducts = parseInt('{{ produits|length }}');
+            
+            // Fonction de recherche
+            function filterProducts() {
+                const searchTerm = searchInput.value.toLowerCase().trim();
+                const rows = table.querySelectorAll('tr');
+                let visibleCount = 0;
+                
+                rows.forEach(row => {
+                    const nom = row.cells[0].textContent.toLowerCase();
+                    const codeBarres = row.cells[1].textContent.toLowerCase();
+                    const prix = row.cells[2].textContent.toLowerCase();
+                    
+                    const isVisible = nom.includes(searchTerm) || 
+                                    codeBarres.includes(searchTerm) || 
+                                    prix.includes(searchTerm);
+                    
+                    if (isVisible) {
+                        row.style.display = '';
+                        visibleCount++;
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+                
+                // Mettre à jour le comptage
+                countTotal.textContent = searchTerm ? visibleCount : totalProducts;
+                
+                // Afficher message si aucun résultat
+                showNoResults(visibleCount === 0 && searchTerm !== '');
+            }
+            
+            function showNoResults(show) {
+                let noResultsRow = document.getElementById('no-results-row');
+                
+                if (show && !noResultsRow) {
+                    noResultsRow = document.createElement('tr');
+                    noResultsRow.id = 'no-results-row';
+                    noResultsRow.innerHTML = `
+                        <td colspan="6" class="text-center py-4">
+                            <i class="bi bi-search text-muted" style="font-size: 2rem;"></i>
+                            <h5 class="text-muted mt-2">Aucun produit trouvé</h5>
+                            <p class="text-muted">Essayez avec d'autres mots-clés</p>
+                        </td>
+                    `;
+                    table.appendChild(noResultsRow);
+                } else if (!show && noResultsRow) {
+                    noResultsRow.remove();
+                }
+            }
+            
+            // Événements
+            searchInput.addEventListener('input', filterProducts);
+            searchInput.addEventListener('keyup', function(e) {
+                if (e.key === 'Escape') {
+                    clearSearch();
+                }
+            });
+            
+            clearButton.addEventListener('click', clearSearch);
+            
+            function clearSearch() {
+                searchInput.value = '';
+                filterProducts();
+                searchInput.focus();
+            }
+            
+            // Focus automatique sur la barre de recherche (Ctrl+F)
+            document.addEventListener('keydown', function(e) {
+                if (e.ctrlKey && e.key === 'f') {
+                    e.preventDefault();
+                    searchInput.focus();
+                }
+            });
+            
+            // Animation de focus
+            searchInput.addEventListener('focus', function() {
+                this.parentElement.style.boxShadow = '0 0 0 0.2rem rgba(13, 110, 253, 0.25)';
+            });
+            
+            searchInput.addEventListener('blur', function() {
+                this.parentElement.style.boxShadow = 'none';
+            });
+        });
+    </script>
+</body>
+</html>
