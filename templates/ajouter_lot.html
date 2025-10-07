@@ -1,0 +1,380 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ajouter Plusieurs Produits - Lot</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        body { 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+            min-height: 100vh;
+        }
+        .card { 
+            border: none; 
+            border-radius: 15px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            background: rgba(255,255,255,0.95);
+        }
+        .table-container {
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .btn-add-row {
+            background: linear-gradient(45deg, #28a745, #20c997);
+            border: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header text-center">
+                        <h3><i class="bi bi-plus-square me-2"></i>Ajouter Plusieurs Produits</h3>
+                        <p class="mb-0 text-muted">Ajoutez autant de produits que vous voulez en une seule fois</p>
+                    </div>
+                    <div class="card-body">
+                        <!-- Boutons d'action -->
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <button class="btn btn-success me-2" onclick="ajouterLigne()">
+                                    <i class="bi bi-plus-circle me-1"></i>Ajouter une ligne
+                                </button>
+                                <button class="btn btn-warning me-2" onclick="genererExemples()">
+                                    <i class="bi bi-magic me-1"></i>Exemples
+                                </button>
+                                <button class="btn btn-info" onclick="viderTout()">
+                                    <i class="bi bi-arrow-clockwise me-1"></i>Vider tout
+                                </button>
+                            </div>
+                            <div class="col-md-6 text-end">
+                                <button class="btn btn-primary btn-lg" onclick="sauvegarderTout()">
+                                    <i class="bi bi-cloud-arrow-up me-2"></i>Sauvegarder Tout
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Tableau des produits -->
+                        <div class="table-container">
+                            <table class="table table-striped" id="tableProduits">
+                                <thead class="table-dark sticky-top">
+                                    <tr>
+                                        <th style="width: 5%">#</th>
+                                        <th style="width: 25%">
+                                            <i class="bi bi-tag me-1"></i>Nom du Produit
+                                        </th>
+                                        <th style="width: 20%">
+                                            <i class="bi bi-upc me-1"></i>Code-barres
+                                        </th>
+                                        <th style="width: 15%">
+                                            <i class="bi bi-currency-euro me-1"></i>Prix (€)
+                                        </th>
+                                        <th style="width: 15%">
+                                            <i class="bi bi-box me-1"></i>Stock
+                                        </th>
+                                        <th style="width: 10%">
+                                            <i class="bi bi-eye me-1"></i>Statut
+                                        </th>
+                                        <th style="width: 10%">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="corpsTableau">
+                                    <!-- Les lignes seront ajoutées dynamiquement -->
+                                </tbody>
+                            </table>
+                        </div>
+
+                        <!-- Résumé -->
+                        <div class="row mt-3">
+                            <div class="col-md-6">
+                                <div class="alert alert-info">
+                                    <strong>📊 Résumé :</strong>
+                                    <span id="nombreLignes">0</span> produits à ajouter
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                                    <a href="/" class="btn btn-secondary">
+                                        <i class="bi bi-arrow-left me-2"></i>Retour
+                                    </a>
+                                    <a href="/ajouter" class="btn btn-outline-primary">
+                                        <i class="bi bi-plus-circle me-2"></i>Ajout Simple
+                                    </a>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de résultats -->
+    <div class="modal fade" id="modalResultats" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">
+                        <i class="bi bi-check-circle me-2"></i>Résultats de l'ajout
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body" id="contenuResultats">
+                    <!-- Contenu dynamique -->
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Fermer</button>
+                    <a href="/" class="btn btn-primary">Voir les produits</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        let compteurLignes = 0;
+
+        // Ajouter une ligne vide
+        function ajouterLigne(nom = '', codeBarres = '', prix = '', stock = '0') {
+            compteurLignes++;
+            const tbody = document.getElementById('corpsTableau');
+            
+            const tr = document.createElement('tr');
+            tr.id = `ligne-${compteurLignes}`;
+            tr.innerHTML = `
+                <td class="text-center">${compteurLignes}</td>
+                <td>
+                    <input type="text" class="form-control form-control-sm" 
+                           placeholder="Ex: Coca-Cola" value="${nom}" 
+                           onchange="mettreAJourStatut(${compteurLignes})">
+                </td>
+                <td>
+                    <div class="input-group input-group-sm">
+                        <input type="text" class="form-control" 
+                               placeholder="Ex: 123456789" value="${codeBarres}"
+                               onchange="mettreAJourStatut(${compteurLignes})">
+                        <button type="button" class="btn btn-outline-secondary btn-sm" 
+                                onclick="genererCodeAuto(${compteurLignes})">
+                            <i class="bi bi-magic"></i>
+                        </button>
+                    </div>
+                </td>
+                <td>
+                    <input type="number" step="0.01" class="form-control form-control-sm" 
+                           placeholder="1.50" value="${prix}" min="0"
+                           onchange="mettreAJourStatut(${compteurLignes})">
+                </td>
+                <td>
+                    <input type="number" class="form-control form-control-sm" 
+                           placeholder="10" value="${stock}" min="0"
+                           onchange="mettreAJourStatut(${compteurLignes})">
+                </td>
+                <td class="text-center">
+                    <span class="badge bg-secondary" id="statut-${compteurLignes}">Vide</span>
+                </td>
+                <td class="text-center">
+                    <button type="button" class="btn btn-outline-danger btn-sm" 
+                            onclick="supprimerLigne(${compteurLignes})">
+                        <i class="bi bi-trash"></i>
+                    </button>
+                </td>
+            `;
+            
+            tbody.appendChild(tr);
+            mettreAJourCompteur();
+            
+            // Focus sur le nom
+            tr.querySelector('input[type="text"]').focus();
+        }
+
+        // Supprimer une ligne
+        function supprimerLigne(numero) {
+            const ligne = document.getElementById(`ligne-${numero}`);
+            if (ligne) {
+                ligne.remove();
+                mettreAJourCompteur();
+            }
+        }
+
+        // Générer un code-barres automatique
+        function genererCodeAuto(numero) {
+            const ligne = document.getElementById(`ligne-${numero}`);
+            const inputCode = ligne.querySelector('td:nth-child(3) input');
+            
+            const timestamp = Date.now().toString();
+            const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+            const code = timestamp.slice(-6) + random;
+            
+            inputCode.value = code;
+            mettreAJourStatut(numero);
+        }
+
+        // Mettre à jour le statut d'une ligne
+        function mettreAJourStatut(numero) {
+            const ligne = document.getElementById(`ligne-${numero}`);
+            const inputs = ligne.querySelectorAll('input');
+            const statut = document.getElementById(`statut-${numero}`);
+            
+            const nom = inputs[0].value.trim();
+            const code = inputs[1].value.trim();
+            const prix = inputs[2].value.trim();
+            const stock = inputs[3].value.trim();
+            
+            if (nom && code && prix && stock) {
+                statut.textContent = 'Prêt';
+                statut.className = 'badge bg-success';
+            } else if (nom || code || prix || stock) {
+                statut.textContent = 'Partiel';
+                statut.className = 'badge bg-warning';
+            } else {
+                statut.textContent = 'Vide';
+                statut.className = 'badge bg-secondary';
+            }
+        }
+
+        // Mettre à jour le compteur
+        function mettreAJourCompteur() {
+            const lignes = document.querySelectorAll('#corpsTableau tr').length;
+            document.getElementById('nombreLignes').textContent = lignes;
+        }
+
+        // Générer des exemples
+        function genererExemples() {
+            const exemples = [
+                ['Coca-Cola 33cl', '', '1.50', '20'],
+                ['Pain de mie', '', '2.30', '5'],
+                ['Lait demi-écrémé 1L', '', '1.20', '12'],
+                ['Yaourt nature x4', '', '2.80', '8'],
+                ['Eau minérale 1.5L', '', '0.80', '15']
+            ];
+            
+            exemples.forEach(exemple => {
+                ajouterLigne(exemple[0], exemple[1], exemple[2], exemple[3]);
+            });
+        }
+
+        // Vider tout
+        function viderTout() {
+            if (confirm('⚠️ Supprimer toutes les lignes ?')) {
+                document.getElementById('corpsTableau').innerHTML = '';
+                compteurLignes = 0;
+                mettreAJourCompteur();
+            }
+        }
+
+        // Sauvegarder tout
+        function sauvegarderTout() {
+            const lignes = document.querySelectorAll('#corpsTableau tr');
+            
+            if (lignes.length === 0) {
+                alert('⚠️ Aucun produit à sauvegarder');
+                return;
+            }
+            
+            const produits = [];
+            let erreurs = 0;
+            
+            lignes.forEach((ligne, index) => {
+                const inputs = ligne.querySelectorAll('input');
+                const nom = inputs[0].value.trim();
+                const code = inputs[1].value.trim();
+                const prix = inputs[2].value.trim();
+                const stock = inputs[3].value.trim();
+                
+                if (nom && code && prix && stock) {
+                    produits.push({
+                        nom: nom,
+                        code_barres: code,
+                        prix: parseFloat(prix),
+                        stock: parseInt(stock)
+                    });
+                } else {
+                    erreurs++;
+                }
+            });
+            
+            if (produits.length === 0) {
+                alert('⚠️ Aucun produit complet à sauvegarder');
+                return;
+            }
+            
+            if (erreurs > 0) {
+                if (!confirm(`⚠️ ${erreurs} lignes incomplètes seront ignorées.\n\nContinuer avec ${produits.length} produits ?`)) {
+                    return;
+                }
+            }
+            
+            // Envoyer les données
+            fetch('/ajouter-lot', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({produits: produits})
+            })
+            .then(response => response.json())
+            .then(data => {
+                afficherResultats(data);
+            })
+            .catch(error => {
+                console.error('Erreur:', error);
+                alert('❌ Erreur lors de la sauvegarde');
+            });
+        }
+
+        // Afficher les résultats
+        function afficherResultats(data) {
+            const contenu = document.getElementById('contenuResultats');
+            
+            let html = `<div class="alert alert-${data.success ? 'success' : 'danger'}">
+                <h5>${data.message}</h5>
+            </div>`;
+            
+            if (data.erreurs && data.erreurs.length > 0) {
+                html += '<div class="alert alert-warning"><h6>⚠️ Erreurs détectées :</h6><ul>';
+                data.erreurs.forEach(erreur => {
+                    html += `<li>${erreur}</li>`;
+                });
+                html += '</ul></div>';
+            }
+            
+            if (data.success && data.ajoutes > 0) {
+                html += `<p class="text-success">✅ ${data.ajoutes} produits ajoutés avec succès dans la base de données.</p>`;
+            }
+            
+            contenu.innerHTML = html;
+            
+            // Afficher le modal
+            const modal = new bootstrap.Modal(document.getElementById('modalResultats'));
+            modal.show();
+            
+            // Vider le tableau si succès
+            if (data.success && data.ajoutes > 0) {
+                setTimeout(() => {
+                    viderTout();
+                }, 2000);
+            }
+        }
+
+        // Initialisation
+        document.addEventListener('DOMContentLoaded', function() {
+            // Ajouter une première ligne
+            ajouterLigne();
+            
+            // Raccourcis clavier
+            document.addEventListener('keydown', function(e) {
+                if (e.ctrlKey && e.key === 'Enter') {
+                    sauvegarderTout();
+                }
+                if (e.ctrlKey && e.key === 'n') {
+                    e.preventDefault();
+                    ajouterLigne();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
