@@ -1,0 +1,426 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Scanner - Simple</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/quagga@0.12.1/dist/quagga.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/qr-scanner@1.4.2/qr-scanner.umd.min.js"></script>
+    <style>
+        body { 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+            min-height: 100vh;
+        }
+        .card { 
+            border: none; 
+            border-radius: 15px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            background: rgba(255,255,255,0.95);
+        }
+        .viewport {
+            width: 100%;
+            height: 300px;
+            border: 3px dashed #007bff;
+            border-radius: 10px;
+            background: #000;
+            position: relative;
+            overflow: hidden;
+        }
+        .viewport canvas, .viewport video {
+            width: 100% !important;
+            height: 100% !important;
+            object-fit: cover;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-5">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header text-center">
+                        <h3><i class="bi bi-upc-scan me-2"></i>Scanner Code-barres</h3>
+                    </div>
+                    <div class="card-body">
+                        <!-- Saisie manuelle / Douchette -->
+                        <div class="mb-4">
+                            <label class="form-label">
+                                <i class="bi bi-upc-scan me-2"></i>Scanner Code-barres (Décrément Automatique -1)
+                            </label>
+                            <div class="input-group">
+                                <input type="text" class="form-control form-control-lg" 
+                                       id="codeBarres" 
+                                       placeholder="Scannez avec douchette ou tapez le code..." 
+                                       autofocus>
+                                <button class="btn btn-danger btn-lg" onclick="scanner()">
+                                    <i class="bi bi-dash-circle me-1"></i> -1 Stock
+                                </button>
+                            </div>
+                            <div class="form-text text-success">
+                                <i class="bi bi-lightning me-1"></i>
+                                <strong>Décrément automatique :</strong> Chaque scan retire 1 unité du stock immédiatement
+                            </div>
+                        </div>
+
+                        <!-- Scanner Caméra -->
+                        <div class="mb-4">
+                            <div class="d-flex justify-content-between align-items-center mb-3">
+                                <label class="form-label mb-0">Scanner avec la Caméra</label>
+                                <div>
+                                    <button id="startBarcodeCamera" class="btn btn-success btn-sm me-2">
+                                        <i class="bi bi-upc-scan me-1"></i>Démarrer Scanner
+                                    </button>
+                                    <button id="stopCamera" class="btn btn-danger btn-sm" style="display: none;">
+                                        <i class="bi bi-camera-video-off me-1"></i>Arrêter
+                                    </button>
+                                </div>
+                            </div>
+                            <div id="scanner-container" style="display: none;">
+                                <div id="interactive" class="viewport"></div>
+                                <div class="text-center mt-2">
+                                    <small id="scanner-instruction" class="text-success fw-bold">Pointez la caméra vers le code-barres → Décrément automatique -1</small>
+                                    <div id="detection-status" class="mt-2" style="display: none;">
+                                        <span class="badge bg-warning">🔍 Analyse en cours...</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div id="resultat"></div>
+                        
+                        <!-- Instructions Simplifiées -->
+                        <div class="alert alert-success">
+                            <h6><i class="bi bi-lightning me-2"></i>Décrément Automatique -1</h6>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <div class="text-center">
+                                        <i class="bi bi-camera-video display-6 text-success"></i>
+                                        <h6 class="mt-2">Scanner Caméra</h6>
+                                    </div>
+                                    <ol class="small">
+                                        <li>Cliquez <strong>"Démarrer Scanner"</strong></li>
+                                        <li>Autorisez l'accès caméra</li>
+                                        <li>Pointez vers le code-barres</li>
+                                        <li><strong>Stock décrémenté automatiquement (-1)</strong></li>
+                                    </ol>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="text-center">
+                                        <i class="bi bi-upc-scan display-6 text-primary"></i>
+                                        <h6 class="mt-2">Douchette/Manuel</h6>
+                                    </div>
+                                    <ol class="small">
+                                        <li>Connectez votre douchette</li>
+                                        <li>Scannez dans le champ</li>
+                                        <li>Ou tapez le code manuellement</li>
+                                        <li>Cliquez <strong>"-1 Stock"</strong></li>
+                                    </ol>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Codes de Test -->
+                        <div class="alert alert-success">
+                            <h6><i class="bi bi-list-check me-2"></i>Codes de Test Disponibles</h6>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <small>
+                                        <strong>Codes à tester :</strong><br>
+                                        • <code>123456789</code> (Coca-Cola - Stock: 10)<br>
+                                        • <code>987654321</code> (Pain - Stock: 0)<br>
+                                        • <code>555666777</code> (Lait - Stock: 2)
+                                    </small>
+                                </div>
+                                <div class="col-md-6">
+                                    <small>
+                                        <strong>Résultat :</strong><br>
+                                        Chaque scan retire <strong>1 unité</strong> du stock<br>
+                                        <span class="badge bg-success">Mise à jour en temps réel</span>
+                                    </small>
+                                </div>
+                            </div>
+                            <div class="mt-2">
+                                <a href="/codes-barres" class="btn btn-sm btn-outline-success">
+                                    <i class="bi bi-upc me-1"></i>Voir tous les codes-barres
+                                </a>
+                                <button class="btn btn-sm btn-outline-primary ms-2" onclick="document.getElementById('codeBarres').value='123456789'; scanner();">
+                                    <i class="bi bi-lightning me-1"></i>Test Rapide (-1)
+                                </button>
+                            </div>
+                        </div>
+
+                        <div class="text-center mt-4">
+                            <a href="/" class="btn btn-secondary">
+                                <i class="bi bi-arrow-left me-2"></i>Retour
+                            </a>
+                            <a href="/codes-barres" class="btn btn-info ms-2">
+                                <i class="bi bi-upc me-2"></i>Codes-barres
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let isScanning = false;
+        let qrScanner = null;
+        let scannerType = null;
+        let lastScannedCode = '';
+        let lastScanTime = 0;
+        let isProcessing = false;
+
+        document.getElementById('codeBarres').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                scanner();
+            }
+        });
+
+        // Boutons caméra
+        document.getElementById('startBarcodeCamera').addEventListener('click', () => startBarcodeCamera());
+        document.getElementById('stopCamera').addEventListener('click', stopCamera);
+
+        function scanner() {
+            const code = document.getElementById('codeBarres').value.trim();
+            if (!code) return;
+
+            processScannedCode(code);
+        }
+
+        function processScannedCode(code) {
+            // PROTECTION CONTRE LES SCANS MULTIPLES
+            const currentTime = Date.now();
+            const timeDiff = currentTime - lastScanTime;
+            
+            // Si c'est le même code dans les 3 secondes, ignorer
+            if (code === lastScannedCode && timeDiff < 3000) {
+                console.log('🚫 SCAN IGNORÉ - Même code trop récent:', code, `(${timeDiff}ms)`);
+                return;
+            }
+            
+            // Si déjà en cours de traitement, ignorer
+            if (isProcessing) {
+                console.log('🚫 SCAN IGNORÉ - Traitement en cours');
+                return;
+            }
+            
+            // Marquer comme en cours de traitement
+            isProcessing = true;
+            lastScannedCode = code;
+            lastScanTime = currentTime;
+            
+            console.log('🔍 Code scanné ACCEPTÉ:', code);
+            console.log('📤 Envoi requête API...');
+            
+            const requestData = {code_barres: code};
+            console.log('📦 Données envoyées:', requestData);
+            
+            fetch('/api/scan', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify(requestData)
+            })
+            .then(response => {
+                console.log('📥 Réponse reçue, status:', response.status);
+                return response.json();
+            })
+            .then(data => {
+                console.log('📊 Données reçues:', data);
+                afficherResultat(data);
+                document.getElementById('codeBarres').value = '';
+                document.getElementById('codeBarres').focus();
+                
+                // Afficher le résultat dans la console
+                if (data.success) {
+                    console.log('✅ SUCCÈS - Stock décrémenté:', data.stock_avant, '→', data.nouveau_stock);
+                } else {
+                    console.log('❌ ÉCHEC:', data.message);
+                }
+            })
+            .catch(error => {
+                console.error('❌ Erreur réseau:', error);
+                afficherResultat({success: false, message: 'Erreur de connexion: ' + error.message});
+            })
+            .finally(() => {
+                // Libérer le traitement après 2 secondes
+                setTimeout(() => {
+                    isProcessing = false;
+                    console.log('🔓 Traitement libéré');
+                }, 2000);
+            });
+        }
+
+        function afficherResultat(data) {
+            const resultat = document.getElementById('resultat');
+            let alertClass = data.success ? 'alert-success' : 'alert-danger';
+            let icon = data.success ? 'bi-check-circle' : 'bi-x-circle';
+            
+            resultat.innerHTML = `
+                <div class="alert ${alertClass} alert-dismissible fade show">
+                    <i class="bi ${icon} me-2"></i>
+                    ${data.message}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+
+            // Auto-hide après 5 secondes si succès
+            if (data.success) {
+                setTimeout(() => {
+                    const alert = resultat.querySelector('.alert');
+                    if (alert) {
+                        alert.classList.remove('show');
+                        setTimeout(() => alert.remove(), 150);
+                    }
+                }, 5000);
+            }
+        }
+
+
+        function startBarcodeCamera() {
+            if (isScanning) return;
+
+            scannerType = 'barcode';
+            document.getElementById('scanner-container').style.display = 'block';
+            document.getElementById('interactive').style.display = 'block';
+            document.getElementById('startBarcodeCamera').style.display = 'none';
+            document.getElementById('stopCamera').style.display = 'inline-block';
+            document.getElementById('scanner-instruction').innerHTML = '<i class="bi bi-lightning me-1"></i>Pointez vers le code-barres → Décrément automatique -1';
+            isScanning = true;
+
+            Quagga.init({
+                inputStream: {
+                    name: "Live",
+                    type: "LiveStream",
+                    target: document.querySelector('#interactive'),
+                    constraints: {
+                        width: 800,
+                        height: 600,
+                        facingMode: "environment"
+                    }
+                },
+                locator: {
+                    patchSize: "medium",
+                    halfSample: true
+                },
+                numOfWorkers: 2,
+                frequency: 10,
+                decoder: {
+                    readers: [
+                        "code_128_reader",
+                        "ean_reader", 
+                        "ean_8_reader",
+                        "code_39_reader",
+                        "code_39_vin_reader",
+                        "codabar_reader",
+                        "upc_reader",
+                        "upc_e_reader"
+                    ]
+                },
+                locate: true
+            }, function(err) {
+                if (err) {
+                    console.error('Erreur Quagga:', err);
+                    afficherResultat({success: false, message: 'Erreur caméra codes-barres: ' + err.message});
+                    stopCamera();
+                    return;
+                }
+                Quagga.start();
+                console.log('Scanner codes-barres démarré');
+            });
+
+            // Variables pour la stabilité de détection
+            let detectionBuffer = [];
+            let detectionCount = {};
+            
+            Quagga.onDetected(function(data) {
+                const code = data.codeResult.code;
+                const quality = data.codeResult.quality || 0;
+                
+                console.log('📷 Code détecté:', code, 'Qualité:', quality);
+                
+                // Afficher le statut de détection
+                const statusDiv = document.getElementById('detection-status');
+                statusDiv.style.display = 'block';
+                
+                // Filtrer les codes de mauvaise qualité
+                if (quality < 50) {
+                    console.log('🚫 Qualité insuffisante:', quality);
+                    statusDiv.innerHTML = '<span class="badge bg-danger">❌ Qualité insuffisante</span>';
+                    return;
+                }
+                
+                // Ajouter au buffer de détection
+                detectionBuffer.push(code);
+                detectionCount[code] = (detectionCount[code] || 0) + 1;
+                
+                // Garder seulement les 5 dernières détections
+                if (detectionBuffer.length > 5) {
+                    const oldCode = detectionBuffer.shift();
+                    detectionCount[oldCode]--;
+                    if (detectionCount[oldCode] <= 0) {
+                        delete detectionCount[oldCode];
+                    }
+                }
+                
+                // Afficher le progrès
+                const maxCount = Math.max(...Object.values(detectionCount));
+                statusDiv.innerHTML = `<span class="badge bg-info">🔍 Analyse: ${code} (${maxCount}/3)</span>`;
+                
+                // Si le même code est détecté au moins 3 fois sur 5, c'est stable
+                if (detectionCount[code] >= 3) {
+                    console.log('✅ Code STABLE détecté:', code, `(${detectionCount[code]}/5)`);
+                    
+                    // Afficher succès
+                    statusDiv.innerHTML = '<span class="badge bg-success">✅ Code stable détecté!</span>';
+                    
+                    // Arrêter temporairement le scanner
+                    Quagga.stop();
+                    
+                    // Traiter le code
+                    processScannedCode(code);
+                    
+                    // Réinitialiser les buffers
+                    detectionBuffer = [];
+                    detectionCount = {};
+                    
+                    // Cacher le statut après 1 seconde
+                    setTimeout(() => {
+                        statusDiv.style.display = 'none';
+                    }, 1000);
+                    
+                    // Redémarrer après 3 secondes
+                    setTimeout(() => {
+                        if (isScanning && scannerType === 'barcode') {
+                            console.log('🔄 Redémarrage scanner...');
+                            statusDiv.innerHTML = '<span class="badge bg-warning">🔍 Analyse en cours...</span>';
+                            statusDiv.style.display = 'block';
+                            Quagga.start();
+                        }
+                    }, 3000);
+                }
+            });
+        }
+
+        function stopCamera() {
+            if (!isScanning) return;
+
+            Quagga.stop();
+
+            document.getElementById('scanner-container').style.display = 'none';
+            document.getElementById('startBarcodeCamera').style.display = 'inline-block';
+            document.getElementById('stopCamera').style.display = 'none';
+            isScanning = false;
+            scannerType = null;
+            console.log('📷 Scanner codes-barres arrêté');
+        }
+
+        // Auto-focus sur le champ de saisie au chargement
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('codeBarres').focus();
+        });
+    </script>
+</body>
+</html>
