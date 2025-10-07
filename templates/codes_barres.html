@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Codes-barres - Gestion Inventaire</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        body { 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+            min-height: 100vh;
+        }
+        .card { 
+            border: none; 
+            border-radius: 15px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            background: rgba(255,255,255,0.95);
+        }
+        .code-barres {
+            font-family: 'Courier New', monospace;
+            font-size: 1.2em;
+            font-weight: bold;
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 5px;
+            text-align: center;
+            margin: 10px 0;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header text-center">
+                        <h3><i class="bi bi-upc me-2"></i>Codes-barres des Produits</h3>
+                        <p class="mb-0 text-muted">{{ produits|length }} produits</p>
+                    </div>
+                    <div class="card-body">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <a href="/" class="btn btn-secondary">
+                                    <i class="bi bi-arrow-left me-2"></i>Retour
+                                </a>
+                            </div>
+                            <div class="col-md-6 text-end">
+                                <button class="btn btn-primary" onclick="window.print()">
+                                    <i class="bi bi-printer me-2"></i>Imprimer
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="row">
+                            {% for produit in produits %}
+                            <div class="col-md-6 col-lg-4 mb-4">
+                                <div class="card h-100">
+                                    <div class="card-body text-center">
+                                        <h6 class="card-title">{{ produit.nom }}</h6>
+                                        <div class="code-barres">
+                                            {{ produit.code_barres }}
+                                        </div>
+                                        <p class="text-muted small">
+                                            Prix: {{ "%.2f"|format(produit.prix) }}€ | 
+                                            Stock: {{ produit.stock }}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
