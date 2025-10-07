@@ -1,0 +1,267 @@
+{% extends "layout.html" %}
+
+{% block title %}Modifier un Produit - Gestion d'Inventaire{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-lg-8 mx-auto">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="mb-0"><i class="bi bi-pencil"></i> Modifier le Produit</h4>
+            </div>
+            <div class="card-body">
+                {% if error %}
+                    <div class="alert alert-danger" role="alert">
+                        <i class="bi bi-exclamation-triangle"></i> {{ error }}
+                    </div>
+                {% endif %}
+
+                <form method="POST" id="editProductForm">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="nom" class="form-label">
+                                    <i class="bi bi-tag"></i> Nom du Produit *
+                                </label>
+                                <input type="text" 
+                                       class="form-control" 
+                                       id="nom" 
+                                       name="nom" 
+                                       value="{{ produit.nom }}"
+                                       required 
+                                       placeholder="Ex: Coca-Cola 33cl">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="code_barres" class="form-label">
+                                    <i class="bi bi-upc"></i> Code-barres *
+                                </label>
+                                <input type="text" 
+                                       class="form-control" 
+                                       id="code_barres" 
+                                       name="code_barres" 
+                                       value="{{ produit.code_barres }}"
+                                       required 
+                                       placeholder="Ex: 5449000000996">
+                                <div class="form-text">
+                                    Attention: modifier le code-barres peut affecter les scans futurs
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="prix" class="form-label">
+                                    <i class="bi bi-currency-euro"></i> Prix Unitaire (€) *
+                                </label>
+                                <input type="number" 
+                                       class="form-control" 
+                                       id="prix" 
+                                       name="prix" 
+                                       value="{{ produit.prix }}"
+                                       step="0.01" 
+                                       min="0" 
+                                       required 
+                                       placeholder="Ex: 1.50">
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="mb-3">
+                                <label for="stock" class="form-label">
+                                    <i class="bi bi-stack"></i> Stock Actuel *
+                                </label>
+                                <div class="input-group">
+                                    <input type="number" 
+                                           class="form-control" 
+                                           id="stock" 
+                                           name="stock" 
+                                           value="{{ produit.stock }}"
+                                           min="0" 
+                                           required 
+                                           placeholder="Ex: 25">
+                                    <span class="input-group-text">unités</span>
+                                </div>
+                                <div class="form-text">
+                                    Stock actuel: {{ produit.stock }} unités
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Informations sur le produit -->
+                    <div class="mb-4">
+                        <div class="card bg-light">
+                            <div class="card-body">
+                                <h6><i class="bi bi-info-circle"></i> Informations du Produit</h6>
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <small class="text-muted">
+                                            <strong>ID:</strong> {{ produit.id }}<br>
+                                            <strong>Créé le:</strong> {{ produit.date_creation }}
+                                        </small>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <small class="text-muted">
+                                            <strong>Statut actuel:</strong>
+                                            {% if produit.stock == 0 %}
+                                                <span class="badge bg-danger">Rupture de stock</span>
+                                            {% elif produit.stock < 2 %}
+                                                <span class="badge bg-warning">Stock faible</span>
+                                            {% else %}
+                                                <span class="badge bg-success">Disponible</span>
+                                            {% endif %}
+                                        </small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Actions rapides pour le stock -->
+                    <div class="mb-4">
+                        <div class="card border-info">
+                            <div class="card-header bg-info text-white">
+                                <h6 class="mb-0"><i class="bi bi-lightning"></i> Actions Rapides sur le Stock</h6>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-md-6">
+                                        <label class="form-label">Ajuster le stock:</label>
+                                        <div class="btn-group d-block" role="group">
+                                            <button type="button" class="btn btn-outline-danger btn-sm" onclick="adjustStock(-10)">-10</button>
+                                            <button type="button" class="btn btn-outline-danger btn-sm" onclick="adjustStock(-5)">-5</button>
+                                            <button type="button" class="btn btn-outline-danger btn-sm" onclick="adjustStock(-1)">-1</button>
+                                            <button type="button" class="btn btn-outline-success btn-sm" onclick="adjustStock(1)">+1</button>
+                                            <button type="button" class="btn btn-outline-success btn-sm" onclick="adjustStock(5)">+5</button>
+                                            <button type="button" class="btn btn-outline-success btn-sm" onclick="adjustStock(10)">+10</button>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-6">
+                                        <label class="form-label">Actions spéciales:</label>
+                                        <div class="d-grid gap-2">
+                                            <button type="button" class="btn btn-outline-warning btn-sm" onclick="setStock(0)">
+                                                <i class="bi bi-x-circle"></i> Mettre en rupture
+                                            </button>
+                                            <button type="button" class="btn btn-outline-info btn-sm" onclick="resetStock()">
+                                                <i class="bi bi-arrow-clockwise"></i> Restaurer valeur originale
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                        <a href="{{ url_for('index') }}" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left"></i> Annuler
+                        </a>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-check-circle"></i> Enregistrer les Modifications
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('editProductForm');
+    const stockInput = document.getElementById('stock');
+    const originalStock = {{ produit.stock }};
+    
+    // Fonctions d'ajustement du stock
+    window.adjustStock = function(amount) {
+        const currentStock = parseInt(stockInput.value) || 0;
+        const newStock = Math.max(0, currentStock + amount);
+        stockInput.value = newStock;
+        updateStockStatus();
+    };
+    
+    window.setStock = function(value) {
+        stockInput.value = value;
+        updateStockStatus();
+    };
+    
+    window.resetStock = function() {
+        stockInput.value = originalStock;
+        updateStockStatus();
+    };
+    
+    function updateStockStatus() {
+        const stock = parseInt(stockInput.value) || 0;
+        let statusHtml = '';
+        
+        if (stock === 0) {
+            statusHtml = '<span class="badge bg-danger">Rupture de stock</span>';
+        } else if (stock < 2) {
+            statusHtml = '<span class="badge bg-warning">Stock faible</span>';
+        } else {
+            statusHtml = '<span class="badge bg-success">Disponible</span>';
+        }
+        
+        // Mettre à jour l'affichage du statut si nécessaire
+        // (Vous pouvez ajouter un élément pour afficher le statut en temps réel)
+    }
+    
+    // Validation du formulaire
+    form.addEventListener('submit', function(e) {
+        const nom = document.getElementById('nom').value.trim();
+        const codeBarres = document.getElementById('code_barres').value.trim();
+        const prix = parseFloat(document.getElementById('prix').value);
+        const stock = parseInt(stockInput.value);
+
+        if (!nom) {
+            e.preventDefault();
+            alert('Le nom du produit est obligatoire.');
+            document.getElementById('nom').focus();
+            return;
+        }
+
+        if (!codeBarres) {
+            e.preventDefault();
+            alert('Le code-barres est obligatoire.');
+            document.getElementById('code_barres').focus();
+            return;
+        }
+
+        if (prix < 0) {
+            e.preventDefault();
+            alert('Le prix ne peut pas être négatif.');
+            document.getElementById('prix').focus();
+            return;
+        }
+
+        if (stock < 0) {
+            e.preventDefault();
+            alert('Le stock ne peut pas être négatif.');
+            stockInput.focus();
+            return;
+        }
+
+        // Confirmation avant modification
+        const confirmation = confirm(
+            `Confirmer les modifications ?\n\n` +
+            `Nom: ${nom}\n` +
+            `Code-barres: ${codeBarres}\n` +
+            `Prix: ${prix} €\n` +
+            `Stock: ${stock} unités`
+        );
+
+        if (!confirmation) {
+            e.preventDefault();
+        }
+    });
+    
+    // Mise à jour du statut lors de la saisie
+    stockInput.addEventListener('input', updateStockStatus);
+});
+</script>
+{% endblock %}

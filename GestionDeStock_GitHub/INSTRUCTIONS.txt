@@ -1,0 +1,16 @@
+
+🎯 INSTRUCTIONS POUR GITHUB
+
+1. Ouvrez un terminal dans le dossier GestionDeStock_GitHub
+2. Exécutez les commandes suivantes :
+
+git init
+git add .
+git commit -m "Initial commit - Application de gestion d'inventaire"
+git remote add origin https://github.com/VOTRE-USERNAME/GestionDeStock.git
+git branch -M main
+git push -u origin main
+
+3. Remplacez VOTRE-USERNAME par votre nom d'utilisateur GitHub
+
+✅ Votre projet sera en ligne !
