@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Statistiques - Gestion Inventaire</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        body { 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+            min-height: 100vh;
+        }
+        .card { 
+            border: none; 
+            border-radius: 15px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            background: rgba(255,255,255,0.95);
+        }
+        .stat-card {
+            text-align: center;
+            padding: 20px;
+        }
+        .stat-number {
+            font-size: 2.5rem;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-4">
+        <!-- En-tête -->
+        <div class="row mb-4">
+            <div class="col">
+                <div class="text-center text-white">
+                    <h1><i class="bi bi-graph-up me-3"></i>Statistiques</h1>
+                    <p class="lead">Tableau de bord de votre inventaire</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Statistiques principales -->
+        <div class="row mb-4">
+            <div class="col-md-3">
+                <div class="card stat-card">
+                    <div class="stat-number text-primary">{{ stats.total_produits }}</div>
+                    <div>Produits Total</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stat-card">
+                    <div class="stat-number text-success">{{ stats.stock_total }}</div>
+                    <div>Stock Total</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stat-card">
+                    <div class="stat-number text-danger">{{ stats.ruptures }}</div>
+                    <div>Ruptures</div>
+                </div>
+            </div>
+            <div class="col-md-3">
+                <div class="card stat-card">
+                    <div class="stat-number text-warning">{{ stats.stock_faible }}</div>
+                    <div>Stock Faible</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Prix moyen -->
+        <div class="row mb-4">
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-body text-center">
+                        <h5><i class="bi bi-currency-euro me-2"></i>Prix Moyen</h5>
+                        <div class="stat-number text-info">{{ stats.prix_moyen }}€</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-6">
+                <div class="card">
+                    <div class="card-body">
+                        <h5><i class="bi bi-exclamation-triangle me-2"></i>Actions Recommandées</h5>
+                        {% if stats.ruptures > 0 %}
+                        <div class="alert alert-danger">
+                            🚨 {{ stats.ruptures }} produits en rupture - Réapprovisionnement urgent !
+                        </div>
+                        {% endif %}
+                        {% if stats.stock_faible > 0 %}
+                        <div class="alert alert-warning">
+                            ⚠️ {{ stats.stock_faible }} produits en stock faible - Surveillance requise
+                        </div>
+                        {% endif %}
+                        {% if stats.ruptures == 0 and stats.stock_faible == 0 %}
+                        <div class="alert alert-success">
+                            ✅ Tous les stocks sont corrects !
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Produits à surveiller -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="bi bi-eye me-2"></i>Produits à Surveiller (Stock le plus faible)</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>Nom</th>
+                                        <th>Code-barres</th>
+                                        <th>Prix</th>
+                                        <th>Stock</th>
+                                        <th>Statut</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    {% for produit in stats.produits_faibles %}
+                                    <tr>
+                                        <td><strong>{{ produit.nom }}</strong></td>
+                                        <td><code>{{ produit.code_barres }}</code></td>
+                                        <td>{{ "%.2f"|format(produit.prix) }}€</td>
+                                        <td>
+                                            <span class="badge {% if produit.stock == 0 %}bg-danger{% elif produit.stock <= 2 %}bg-warning{% else %}bg-info{% endif %}">
+                                                {{ produit.stock }}
+                                            </span>
+                                        </td>
+                                        <td>
+                                            {% if produit.stock == 0 %}
+                                                <span class="badge bg-danger">RUPTURE</span>
+                                            {% elif produit.stock <= 2 %}
+                                                <span class="badge bg-warning">CRITIQUE</span>
+                                            {% elif produit.stock <= 5 %}
+                                                <span class="badge bg-info">FAIBLE</span>
+                                            {% else %}
+                                                <span class="badge bg-success">OK</span>
+                                            {% endif %}
+                                        </td>
+                                    </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Boutons d'action -->
+        <div class="row">
+            <div class="col-12 text-center">
+                <a href="/" class="btn btn-secondary me-2">
+                    <i class="bi bi-arrow-left me-2"></i>Retour
+                </a>
+                <a href="/export/stock-faible" class="btn btn-warning me-2">
+                    <i class="bi bi-download me-2"></i>Export Stock Faible
+                </a>
+                <a href="/export/rupture" class="btn btn-danger">
+                    <i class="bi bi-download me-2"></i>Export Ruptures
+                </a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
