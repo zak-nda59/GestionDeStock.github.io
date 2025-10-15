@@ -1,0 +1,406 @@
+{% extends "layout_pro.html" %}
+
+{% block title %}Accueil Pro - Gestion d'Inventaire{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="d-flex justify-content-between align-items-center mb-5">
+            <div>
+                <h1 class="display-5 fw-bold text-white mb-2">
+                    <i class="bi bi-box-seam me-3"></i>
+                    Inventaire des Produits
+                </h1>
+                <p class="lead text-white-50 mb-0">Gérez votre stock en temps réel avec des outils professionnels</p>
+            </div>
+            <div class="btn-group shadow-lg" role="group">
+                <a href="{{ url_for('scanner') }}" class="btn btn-success btn-lg px-4">
+                    <i class="bi bi-upc-scan me-2"></i>
+                    Scanner
+                </a>
+                <a href="{{ url_for('ajouter') }}" class="btn btn-primary btn-lg px-4">
+                    <i class="bi bi-plus-circle me-2"></i>
+                    Ajouter
+                </a>
+            </div>
+        </div>
+
+        <!-- Statistiques rapides avec animations -->
+        <div class="row g-4 mb-5">
+            <div class="col-lg-3 col-md-6">
+                <div class="card h-100 bg-primary text-white border-0 shadow-lg animate-on-scroll">
+                    <div class="card-body d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <h3 class="mb-1 fw-bold" data-counter="{{ produits|length }}">0</h3>
+                            <p class="mb-0 opacity-75">Produits Total</p>
+                            <div class="progress mt-2" style="height: 3px;">
+                                <div class="progress-bar bg-white" style="width: 100%"></div>
+                            </div>
+                        </div>
+                        <div class="ms-3">
+                            <i class="bi bi-box-seam display-4 opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-3 col-md-6">
+                <div class="card h-100 bg-success text-white border-0 shadow-lg animate-on-scroll">
+                    <div class="card-body d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <h3 class="mb-1 fw-bold" data-counter="{{ produits|sum(attribute='stock') }}">0</h3>
+                            <p class="mb-0 opacity-75">Stock Total</p>
+                            <div class="progress mt-2" style="height: 3px;">
+                                <div class="progress-bar bg-white" style="width: 85%"></div>
+                            </div>
+                        </div>
+                        <div class="ms-3">
+                            <i class="bi bi-stack display-4 opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-3 col-md-6">
+                <div class="card h-100 bg-warning text-white border-0 shadow-lg animate-on-scroll">
+                    <div class="card-body d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <h3 class="mb-1 fw-bold" data-counter="{{ produits|selectattr('stock', 'lt', 2)|list|length }}">0</h3>
+                            <p class="mb-0 opacity-75">Stock Faible</p>
+                            <div class="progress mt-2" style="height: 3px;">
+                                <div class="progress-bar bg-white" style="width: {{ ((produits|selectattr('stock', 'lt', 2)|list|length) / (produits|length) * 100) if produits|length > 0 else 0 }}%"></div>
+                            </div>
+                        </div>
+                        <div class="ms-3">
+                            <i class="bi bi-exclamation-triangle display-4 opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-3 col-md-6">
+                <div class="card h-100 bg-danger text-white border-0 shadow-lg animate-on-scroll">
+                    <div class="card-body d-flex align-items-center">
+                        <div class="flex-grow-1">
+                            <h3 class="mb-1 fw-bold" data-counter="{{ produits|selectattr('stock', 'equalto', 0)|list|length }}">0</h3>
+                            <p class="mb-0 opacity-75">Ruptures</p>
+                            <div class="progress mt-2" style="height: 3px;">
+                                <div class="progress-bar bg-white" style="width: {{ ((produits|selectattr('stock', 'equalto', 0)|list|length) / (produits|length) * 100) if produits|length > 0 else 0 }}%"></div>
+                            </div>
+                        </div>
+                        <div class="ms-3">
+                            <i class="bi bi-x-circle display-4 opacity-50"></i>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Actions rapides -->
+        <div class="row g-4 mb-5">
+            <div class="col-lg-4">
+                <div class="card h-100 border-0 shadow-lg animate-on-scroll">
+                    <div class="card-body text-center p-4">
+                        <div class="bg-primary bg-gradient rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 60px; height: 60px;">
+                            <i class="bi bi-upc-scan text-white fs-3"></i>
+                        </div>
+                        <h5 class="card-title fw-bold">Scanner Rapide</h5>
+                        <p class="card-text text-muted">Scannez vos produits avec la caméra ou une douchette pour mettre à jour le stock instantanément.</p>
+                        <a href="{{ url_for('scanner') }}" class="btn btn-primary btn-sm px-4">
+                            <i class="bi bi-arrow-right me-1"></i>
+                            Commencer
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-4">
+                <div class="card h-100 border-0 shadow-lg animate-on-scroll">
+                    <div class="card-body text-center p-4">
+                        <div class="bg-success bg-gradient rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 60px; height: 60px;">
+                            <i class="bi bi-plus-circle text-white fs-3"></i>
+                        </div>
+                        <h5 class="card-title fw-bold">Ajouter Produits</h5>
+                        <p class="card-text text-muted">Ajoutez de nouveaux produits à votre inventaire avec toutes les informations nécessaires.</p>
+                        <a href="{{ url_for('ajouter') }}" class="btn btn-success btn-sm px-4">
+                            <i class="bi bi-arrow-right me-1"></i>
+                            Ajouter
+                        </a>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-4">
+                <div class="card h-100 border-0 shadow-lg animate-on-scroll">
+                    <div class="card-body text-center p-4">
+                        <div class="bg-info bg-gradient rounded-circle d-inline-flex align-items-center justify-content-center mb-3" style="width: 60px; height: 60px;">
+                            <i class="bi bi-graph-up text-white fs-3"></i>
+                        </div>
+                        <h5 class="card-title fw-bold">Statistiques</h5>
+                        <p class="card-text text-muted">Visualisez vos données avec des graphiques interactifs et des rapports détaillés.</p>
+                        <a href="{{ url_for('statistiques') }}" class="btn btn-info btn-sm px-4">
+                            <i class="bi bi-arrow-right me-1"></i>
+                            Analyser
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tableau des produits avec recherche -->
+        <div class="card border-0 shadow-lg animate-on-scroll">
+            <div class="card-header bg-white border-0 py-4">
+                <div class="row align-items-center">
+                    <div class="col-md-6">
+                        <h5 class="mb-0 fw-bold">
+                            <i class="bi bi-table me-2 text-primary"></i>
+                            Liste des Produits
+                            <span class="badge bg-primary ms-2">{{ produits|length }}</span>
+                        </h5>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="input-group">
+                            <span class="input-group-text bg-light border-end-0">
+                                <i class="bi bi-search text-muted"></i>
+                            </span>
+                            <input type="text" class="form-control border-start-0 bg-light" 
+                                   placeholder="Rechercher un produit..." 
+                                   data-search="tbody tr"
+                                   id="searchProducts">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="card-body p-0">
+                {% if produits %}
+                    <div class="table-responsive">
+                        <table class="table table-hover mb-0">
+                            <thead class="bg-light">
+                                <tr>
+                                    <th class="border-0 py-3 ps-4">
+                                        <div class="d-flex align-items-center">
+                                            <i class="bi bi-tag me-2"></i>
+                                            Produit
+                                        </div>
+                                    </th>
+                                    <th class="border-0 py-3">
+                                        <div class="d-flex align-items-center">
+                                            <i class="bi bi-upc me-2"></i>
+                                            Code-barres
+                                        </div>
+                                    </th>
+                                    <th class="border-0 py-3">
+                                        <div class="d-flex align-items-center">
+                                            <i class="bi bi-currency-euro me-2"></i>
+                                            Prix
+                                        </div>
+                                    </th>
+                                    <th class="border-0 py-3">
+                                        <div class="d-flex align-items-center">
+                                            <i class="bi bi-stack me-2"></i>
+                                            Stock
+                                        </div>
+                                    </th>
+                                    <th class="border-0 py-3">
+                                        <div class="d-flex align-items-center">
+                                            <i class="bi bi-speedometer2 me-2"></i>
+                                            Statut
+                                        </div>
+                                    </th>
+                                    <th class="border-0 py-3 pe-4">
+                                        <div class="d-flex align-items-center">
+                                            <i class="bi bi-gear me-2"></i>
+                                            Actions
+                                        </div>
+                                    </th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                {% for produit in produits %}
+                                <tr class="animate-on-scroll">
+                                    <td class="ps-4 py-3">
+                                        <div class="d-flex align-items-center">
+                                            <div class="bg-primary bg-gradient rounded-circle d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px;">
+                                                <i class="bi bi-box text-white"></i>
+                                            </div>
+                                            <div>
+                                                <div class="fw-semibold">{{ produit.nom }}</div>
+                                                <small class="text-muted">ID: {{ produit.id }}</small>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="py-3">
+                                        <code class="bg-light px-2 py-1 rounded">{{ produit.code_barres }}</code>
+                                    </td>
+                                    <td class="py-3">
+                                        <span class="badge bg-info bg-gradient fs-6 px-3 py-2">
+                                            {{ "%.2f"|format(produit.prix) }} €
+                                        </span>
+                                    </td>
+                                    <td class="py-3">
+                                        <div class="d-flex align-items-center">
+                                            <span class="fw-bold fs-5 me-2">{{ produit.stock }}</span>
+                                            <div class="progress flex-grow-1" style="height: 6px; max-width: 60px;">
+                                                <div class="progress-bar 
+                                                    {% if produit.stock == 0 %}bg-danger
+                                                    {% elif produit.stock < 2 %}bg-warning
+                                                    {% else %}bg-success{% endif %}" 
+                                                    style="width: {{ (produit.stock / 50 * 100) if produit.stock <= 50 else 100 }}%">
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td class="py-3">
+                                        {% if produit.stock == 0 %}
+                                            <span class="badge bg-danger bg-gradient px-3 py-2">
+                                                <i class="bi bi-x-circle me-1"></i>
+                                                Rupture
+                                            </span>
+                                        {% elif produit.stock < 2 %}
+                                            <span class="badge bg-warning bg-gradient px-3 py-2">
+                                                <i class="bi bi-exclamation-triangle me-1"></i>
+                                                Stock faible
+                                            </span>
+                                        {% else %}
+                                            <span class="badge bg-success bg-gradient px-3 py-2">
+                                                <i class="bi bi-check-circle me-1"></i>
+                                                Disponible
+                                            </span>
+                                        {% endif %}
+                                    </td>
+                                    <td class="py-3 pe-4">
+                                        <div class="btn-group" role="group">
+                                            <a href="{{ url_for('modifier', id=produit.id) }}" 
+                                               class="btn btn-outline-primary btn-sm" 
+                                               data-bs-toggle="tooltip" 
+                                               title="Modifier ce produit">
+                                                <i class="bi bi-pencil"></i>
+                                            </a>
+                                            <a href="{{ url_for('supprimer', id=produit.id) }}" 
+                                               class="btn btn-outline-danger btn-sm" 
+                                               onclick="return confirm('Êtes-vous sûr de vouloir supprimer {{ produit.nom }} ?')"
+                                               data-bs-toggle="tooltip" 
+                                               title="Supprimer ce produit">
+                                                <i class="bi bi-trash"></i>
+                                            </a>
+                                        </div>
+                                    </td>
+                                </tr>
+                                {% endfor %}
+                            </tbody>
+                        </table>
+                    </div>
+                {% else %}
+                    <div class="text-center py-5">
+                        <div class="mb-4">
+                            <i class="bi bi-inbox display-1 text-muted opacity-50"></i>
+                        </div>
+                        <h3 class="text-muted mb-3">Aucun produit trouvé</h3>
+                        <p class="text-muted mb-4">Commencez par ajouter des produits à votre inventaire pour les voir apparaître ici.</p>
+                        <a href="{{ url_for('ajouter') }}" class="btn btn-primary btn-lg px-4">
+                            <i class="bi bi-plus-circle me-2"></i>
+                            Ajouter votre premier produit
+                        </a>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Animation des compteurs
+    const counters = document.querySelectorAll('[data-counter]');
+    counters.forEach(counter => {
+        const target = parseInt(counter.dataset.counter);
+        animateCounter(counter, 0, target, 2000);
+    });
+    
+    // Recherche en temps réel améliorée
+    const searchInput = document.getElementById('searchProducts');
+    if (searchInput) {
+        searchInput.addEventListener('input', function(e) {
+            const searchTerm = e.target.value.toLowerCase();
+            const rows = document.querySelectorAll('tbody tr');
+            
+            rows.forEach((row, index) => {
+                const text = row.textContent.toLowerCase();
+                const shouldShow = text.includes(searchTerm);
+                
+                setTimeout(() => {
+                    if (shouldShow) {
+                        row.style.display = '';
+                        row.style.opacity = '0';
+                        row.style.transform = 'translateY(10px)';
+                        
+                        setTimeout(() => {
+                            row.style.opacity = '1';
+                            row.style.transform = 'translateY(0)';
+                        }, 50);
+                    } else {
+                        row.style.opacity = '0';
+                        row.style.transform = 'translateY(-10px)';
+                        
+                        setTimeout(() => {
+                            row.style.display = 'none';
+                        }, 200);
+                    }
+                }, index * 30);
+            });
+        });
+    }
+    
+    // Animation des barres de progression
+    setTimeout(() => {
+        const progressBars = document.querySelectorAll('.progress-bar');
+        progressBars.forEach(bar => {
+            const width = bar.style.width;
+            bar.style.width = '0%';
+            bar.style.transition = 'width 1.5s ease-out';
+            
+            setTimeout(() => {
+                bar.style.width = width;
+            }, 500);
+        });
+    }, 1000);
+    
+    // Effet de hover sur les cartes
+    const cards = document.querySelectorAll('.card');
+    cards.forEach(card => {
+        card.addEventListener('mouseenter', function() {
+            this.style.transform = 'translateY(-5px) scale(1.02)';
+        });
+        
+        card.addEventListener('mouseleave', function() {
+            this.style.transform = 'translateY(0) scale(1)';
+        });
+    });
+});
+
+function animateCounter(element, start, end, duration) {
+    const startTime = performance.now();
+    
+    function updateCounter(currentTime) {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+        
+        const easeOutCubic = 1 - Math.pow(1 - progress, 3);
+        const current = Math.floor(start + (end - start) * easeOutCubic);
+        
+        element.textContent = current;
+        
+        if (progress < 1) {
+            requestAnimationFrame(updateCounter);
+        } else {
+            element.textContent = end;
+        }
+    }
+    
+    requestAnimationFrame(updateCounter);
+}
+</script>
+{% endblock %}

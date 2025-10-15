@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📈 Dashboard - Mobile Pro</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        * { font-family: 'Poppins', sans-serif; }
+        
+        body { 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .dashboard-card {
+            background: white;
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            margin-bottom: 25px;
+            transition: all 0.3s ease;
+        }
+        
+        .dashboard-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.15);
+        }
+        
+        .metric-card {
+            background: linear-gradient(145deg, #ffffff, #f8f9fa);
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.08);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .metric-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+        }
+        
+        .metric-card.primary::before { background: linear-gradient(90deg, #667eea, #764ba2); }
+        .metric-card.success::before { background: linear-gradient(90deg, #56ab2f, #a8e6cf); }
+        .metric-card.danger::before { background: linear-gradient(90deg, #ff416c, #ff4b2b); }
+        .metric-card.warning::before { background: linear-gradient(90deg, #f093fb, #f5576c); }
+        .metric-card.info::before { background: linear-gradient(90deg, #4facfe, #00f2fe); }
+        
+        .metric-number {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+        
+        .metric-label {
+            color: #666;
+            font-weight: 500;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-size: 0.9rem;
+        }
+        
+        .metric-icon {
+            font-size: 2rem;
+            margin-bottom: 10px;
+            opacity: 0.7;
+        }
+        
+        .recent-item {
+            display: flex;
+            align-items: center;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            background: #f8f9fa;
+            transition: all 0.3s ease;
+        }
+        
+        .recent-item:hover {
+            background: #e9ecef;
+            transform: translateX(5px);
+        }
+        
+        .category-bar {
+            background: #e9ecef;
+            height: 8px;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 5px;
+        }
+        
+        .category-progress {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            border-radius: 4px;
+            transition: width 1s ease;
+        }
+        
+        .quick-action {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            border-radius: 15px;
+            padding: 12px 25px;
+            margin: 5px;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+        
+        .quick-action:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+            color: white;
+        }
+        
+        .alert-modern {
+            border: none;
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .alert-danger-modern {
+            background: linear-gradient(45deg, rgba(255, 65, 108, 0.1), rgba(255, 75, 43, 0.1));
+            border-left: 4px solid #ff416c;
+        }
+        
+        .alert-warning-modern {
+            background: linear-gradient(45deg, rgba(240, 147, 251, 0.1), rgba(245, 87, 108, 0.1));
+            border-left: 4px solid #f093fb;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg" style="background: rgba(255,255,255,0.1); backdrop-filter: blur(10px);">
+        <div class="container">
+            <span class="navbar-brand text-white fw-bold">📈 Tableau de Bord</span>
+            <div class="d-flex gap-2">
+                <a href="/produits" class="btn btn-light btn-sm">
+                    <i class="bi bi-grid-3x3-gap me-1"></i>Produits
+                </a>
+                <a href="/" class="btn btn-outline-light btn-sm">
+                    <i class="bi bi-house me-1"></i>Accueil
+                </a>
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <!-- Alertes -->
+        {% if data.ruptures > 0 %}
+        <div class="alert alert-danger-modern">
+            <h6><i class="bi bi-exclamation-triangle me-2"></i>🚨 {{ data.ruptures }} produit(s) en rupture</h6>
+            <p class="mb-2">Des produits nécessitent un réapprovisionnement urgent.</p>
+            <a href="/ruptures" class="btn btn-danger btn-sm">Voir les ruptures</a>
+        </div>
+        {% endif %}
+
+        {% if data.stock_faible > 0 %}
+        <div class="alert alert-warning-modern">
+            <h6><i class="bi bi-exclamation me-2"></i>⚠️ {{ data.stock_faible }} produit(s) à stock faible</h6>
+            <p class="mb-2">Surveillez ces produits pour éviter les ruptures.</p>
+            <a href="/stock-faible" class="btn btn-warning btn-sm">Voir stock faible</a>
+        </div>
+        {% endif %}
+
+        <!-- Métriques principales -->
+        <div class="row mb-4">
+            <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+                <div class="metric-card primary">
+                    <div class="metric-icon text-primary">
+                        <i class="bi bi-box-seam"></i>
+                    </div>
+                    <div class="metric-number text-primary">{{ data.total_produits }}</div>
+                    <div class="metric-label">Produits</div>
+                </div>
+            </div>
+            <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+                <div class="metric-card success">
+                    <div class="metric-icon text-success">
+                        <i class="bi bi-stack"></i>
+                    </div>
+                    <div class="metric-number text-success">{{ data.stock_total }}</div>
+                    <div class="metric-label">Stock Total</div>
+                </div>
+            </div>
+            <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+                <div class="metric-card danger">
+                    <div class="metric-icon text-danger">
+                        <i class="bi bi-exclamation-triangle"></i>
+                    </div>
+                    <div class="metric-number text-danger">{{ data.ruptures }}</div>
+                    <div class="metric-label">Ruptures</div>
+                </div>
+            </div>
+            <div class="col-lg-2 col-md-4 col-sm-6 mb-3">
+                <div class="metric-card warning">
+                    <div class="metric-icon text-warning">
+                        <i class="bi bi-exclamation"></i>
+                    </div>
+                    <div class="metric-number text-warning">{{ data.stock_faible }}</div>
+                    <div class="metric-label">Stock Faible</div>
+                </div>
+            </div>
+            <div class="col-lg-4 col-md-8 col-sm-12 mb-3">
+                <div class="metric-card info">
+                    <div class="metric-icon text-info">
+                        <i class="bi bi-currency-euro"></i>
+                    </div>
+                    <div class="metric-number text-info">{{ data.valeur_stock }}€</div>
+                    <div class="metric-label">Valeur du Stock</div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row">
+            <!-- Produits récents -->
+            <div class="col-lg-6 mb-4">
+                <div class="dashboard-card">
+                    <h5 class="fw-bold mb-4">
+                        <i class="bi bi-clock me-2"></i>Produits Récents
+                    </h5>
+                    {% if data.produits_recents %}
+                    {% for produit in data.produits_recents %}
+                    <div class="recent-item">
+                        <div class="me-3">
+                            {% for cat in categories %}
+                                {% if cat.nom == produit.categorie %}
+                                    <span style="font-size: 1.5em;">{{ cat.emoji }}</span>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                        <div class="flex-grow-1">
+                            <h6 class="mb-1">{{ produit.nom }}</h6>
+                            <small class="text-muted">{{ produit.categorie }} • {{ "%.2f"|format(produit.prix) }}€</small>
+                        </div>
+                        <div class="text-end">
+                            <span class="badge 
+                                {% if produit.stock == 0 %}bg-danger
+                                {% elif produit.stock <= 5 %}bg-warning
+                                {% else %}bg-success{% endif %}">
+                                {{ produit.stock }}
+                            </span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    {% else %}
+                    <div class="text-center py-4 text-muted">
+                        <i class="bi bi-inbox display-4"></i>
+                        <p class="mt-2">Aucun produit récent</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Top catégories -->
+            <div class="col-lg-6 mb-4">
+                <div class="dashboard-card">
+                    <h5 class="fw-bold mb-4">
+                        <i class="bi bi-bar-chart me-2"></i>Top Catégories
+                    </h5>
+                    {% if data.top_categories %}
+                    {% for cat_data in data.top_categories %}
+                    <div class="mb-4">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div class="d-flex align-items-center">
+                                {% for cat in categories %}
+                                    {% if cat.nom == cat_data.categorie %}
+                                        <span class="me-2" style="font-size: 1.2em;">{{ cat.emoji }}</span>
+                                    {% endif %}
+                                {% endfor %}
+                                <span class="fw-bold">{{ cat_data.categorie }}</span>
+                            </div>
+                            <div class="text-end">
+                                <span class="badge bg-primary">{{ cat_data.count }} produits</span>
+                                <span class="badge bg-success">{{ cat_data.stock_total or 0 }} stock</span>
+                            </div>
+                        </div>
+                        <div class="category-bar">
+                            {% set max_count = data.top_categories[0].count if data.top_categories else 1 %}
+                            <div class="category-progress" style="width: {{ (cat_data.count / max_count * 100)|round }}%"></div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    {% else %}
+                    <div class="text-center py-4 text-muted">
+                        <i class="bi bi-folder display-4"></i>
+                        <p class="mt-2">Aucune catégorie</p>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Actions rapides -->
+        <div class="dashboard-card">
+            <h5 class="fw-bold mb-4">
+                <i class="bi bi-lightning me-2"></i>Actions Rapides
+            </h5>
+            <div class="text-center">
+                <a href="/ajouter" class="quick-action">
+                    <i class="bi bi-plus-circle me-1"></i>Ajouter Produit
+                </a>
+                <a href="/scanner" class="quick-action">
+                    <i class="bi bi-camera me-1"></i>Scanner
+                </a>
+                <a href="/statistiques" class="quick-action">
+                    <i class="bi bi-graph-up me-1"></i>Statistiques
+                </a>
+                <a href="/codes-barres" class="quick-action">
+                    <i class="bi bi-upc-scan me-1"></i>Codes-barres
+                </a>
+                <a href="/export" class="quick-action">
+                    <i class="bi bi-download me-1"></i>Export CSV
+                </a>
+                <a href="/categories" class="quick-action">
+                    <i class="bi bi-folder me-1"></i>Catégories
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Animation des métriques au chargement
+        document.addEventListener('DOMContentLoaded', function() {
+            const cards = document.querySelectorAll('.metric-card, .dashboard-card');
+            cards.forEach((card, index) => {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(30px)';
+                
+                setTimeout(() => {
+                    card.style.transition = 'all 0.6s cubic-bezier(0.4, 0, 0.2, 1)';
+                    card.style.opacity = '1';
+                    card.style.transform = 'translateY(0)';
+                }, index * 100);
+            });
+
+            // Animation des barres de progression
+            setTimeout(() => {
+                const progressBars = document.querySelectorAll('.category-progress');
+                progressBars.forEach(bar => {
+                    const width = bar.style.width;
+                    bar.style.width = '0%';
+                    setTimeout(() => {
+                        bar.style.width = width;
+                    }, 500);
+                });
+            }, 1000);
+        });
+
+        // Mise à jour automatique des stats toutes les 30 secondes
+        setInterval(function() {
+            fetch('/api/stats')
+                .then(response => response.json())
+                .then(data => {
+                    if (!data.error) {
+                        // Mettre à jour les métriques si nécessaire
+                        console.log('Stats mises à jour:', data);
+                    }
+                })
+                .catch(error => console.log('Erreur mise à jour stats:', error));
+        }, 30000);
+    </script>
+</body>
+</html>

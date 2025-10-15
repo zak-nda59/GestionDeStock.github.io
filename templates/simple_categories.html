@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📂 Catégories - Boutique Mobile</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        body { background: #f8f9fa; }
+        .main-card { 
+            border-radius: 15px; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            background: white;
+        }
+        .category-item {
+            border: 1px solid #e9ecef;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 10px;
+            background: white;
+            transition: all 0.3s ease;
+        }
+        .category-item:hover {
+            border-color: #007bff;
+            transform: translateY(-2px);
+        }
+        .emoji-selector {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            gap: 8px;
+            max-height: 200px;
+            overflow-y: auto;
+            padding: 10px;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            background: #f8f9fa;
+        }
+        .emoji-option {
+            font-size: 1.5em;
+            padding: 8px;
+            border: 1px solid transparent;
+            border-radius: 5px;
+            cursor: pointer;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+        .emoji-option:hover {
+            background: #e9ecef;
+            border-color: #007bff;
+        }
+        .emoji-option.selected {
+            background: #007bff;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark bg-info">
+        <div class="container">
+            <span class="navbar-brand">📂 Gestion des Catégories</span>
+            <a href="/" class="btn btn-light btn-sm">
+                <i class="bi bi-arrow-left me-1"></i>Retour
+            </a>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <!-- Ajouter une catégorie -->
+        <div class="main-card p-4 mb-4">
+            <h5><i class="bi bi-plus-circle me-2"></i>Ajouter une catégorie</h5>
+            <form id="ajouterForm" onsubmit="ajouterCategorie(event)">
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label">📝 Nom de la catégorie</label>
+                        <input type="text" class="form-control" name="nom" id="nomCategorie" 
+                               placeholder="Ex: Gaming" required>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label">🎭 Emoji</label>
+                        <input type="text" class="form-control text-center" name="emoji" id="emojiCategorie" 
+                               value="📦" readonly onclick="toggleEmojiSelector()">
+                    </div>
+                    <div class="col-md-3 d-flex align-items-end">
+                        <button type="submit" class="btn btn-success w-100">
+                            <i class="bi bi-plus me-1"></i>Ajouter
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Sélecteur d'emojis -->
+                <div id="emojiSelector" class="emoji-selector mt-3" style="display: none;">
+                    <div class="emoji-option selected" onclick="selectEmoji('📦', this)">📦</div>
+                    <div class="emoji-option" onclick="selectEmoji('📱', this)">📱</div>
+                    <div class="emoji-option" onclick="selectEmoji('🔋', this)">🔋</div>
+                    <div class="emoji-option" onclick="selectEmoji('🛡️', this)">🛡️</div>
+                    <div class="emoji-option" onclick="selectEmoji('👜', this)">👜</div>
+                    <div class="emoji-option" onclick="selectEmoji('🔍', this)">🔍</div>
+                    <div class="emoji-option" onclick="selectEmoji('🔌', this)">🔌</div>
+                    <div class="emoji-option" onclick="selectEmoji('🔧', this)">🔧</div>
+                    <div class="emoji-option" onclick="selectEmoji('⚡', this)">⚡</div>
+                    <div class="emoji-option" onclick="selectEmoji('🔊', this)">🔊</div>
+                    <div class="emoji-option" onclick="selectEmoji('🎧', this)">🎧</div>
+                    <div class="emoji-option" onclick="selectEmoji('📷', this)">📷</div>
+                    <div class="emoji-option" onclick="selectEmoji('💡', this)">💡</div>
+                    <div class="emoji-option" onclick="selectEmoji('🔒', this)">🔒</div>
+                    <div class="emoji-option" onclick="selectEmoji('💾', this)">💾</div>
+                    <div class="emoji-option" onclick="selectEmoji('🖥️', this)">🖥️</div>
+                    <div class="emoji-option" onclick="selectEmoji('🎮', this)">🎮</div>
+                    <div class="emoji-option" onclick="selectEmoji('📺', this)">📺</div>
+                    <div class="emoji-option" onclick="selectEmoji('🏷️', this)">🏷️</div>
+                    <div class="emoji-option" onclick="selectEmoji('💰', this)">💰</div>
+                    <div class="emoji-option" onclick="selectEmoji('🛒', this)">🛒</div>
+                    <div class="emoji-option" onclick="selectEmoji('🎯', this)">🎯</div>
+                    <div class="emoji-option" onclick="selectEmoji('💼', this)">💼</div>
+                    <div class="emoji-option" onclick="selectEmoji('📎', this)">📎</div>
+                </div>
+            </form>
+            
+            <div id="resultatAjout"></div>
+        </div>
+
+        <!-- Liste des catégories -->
+        <div class="main-card p-4">
+            <h5><i class="bi bi-list me-2"></i>Catégories existantes ({{ categories|length }})</h5>
+            
+            {% if categories %}
+            <div class="row">
+                {% for categorie in categories %}
+                <div class="col-md-6 col-lg-4 mb-3">
+                    <div class="category-item">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="flex-grow-1">
+                                <div class="d-flex align-items-center mb-2">
+                                    <span class="fs-3 me-2">{{ categorie.emoji }}</span>
+                                    <div>
+                                        <h6 class="mb-0">{{ categorie.nom }}</h6>
+                                        {% if categorie.description %}
+                                        <small class="text-muted">{{ categorie.description }}</small>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            <div>
+                                <button class="btn btn-sm btn-outline-danger" 
+                                        onclick="confirmerSuppression({{ categorie.id }}, '{{ categorie.nom }}')">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="text-center py-4">
+                <i class="bi bi-folder display-4 text-muted"></i>
+                <h6 class="text-muted mt-3">Aucune catégorie personnalisée</h6>
+                <p class="text-muted">Ajoutez votre première catégorie ci-dessus</p>
+            </div>
+            {% endif %}
+        </div>
+
+        <!-- Conseils -->
+        <div class="main-card p-3 mt-3">
+            <h6><i class="bi bi-lightbulb me-2"></i>Conseils</h6>
+            <div class="row">
+                <div class="col-md-6">
+                    <small>
+                        <strong>💡 Idées de catégories :</strong><br>
+                        • Par marque : Apple, Samsung<br>
+                        • Par fonction : Gaming, Audio<br>
+                        • Par prix : Premium, Économique
+                    </small>
+                </div>
+                <div class="col-md-6">
+                    <small>
+                        <strong>⚠️ Suppression :</strong><br>
+                        • Les produits seront déplacés vers "Général"<br>
+                        • Action irréversible<br>
+                        • Catégories de base protégées
+                    </small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function toggleEmojiSelector() {
+            const selector = document.getElementById('emojiSelector');
+            selector.style.display = selector.style.display === 'none' ? 'block' : 'none';
+        }
+
+        function selectEmoji(emoji, element) {
+            // Désélectionner tous
+            document.querySelectorAll('.emoji-option').forEach(opt => {
+                opt.classList.remove('selected');
+            });
+            
+            // Sélectionner le nouveau
+            element.classList.add('selected');
+            document.getElementById('emojiCategorie').value = emoji;
+            
+            // Fermer après sélection
+            setTimeout(() => {
+                document.getElementById('emojiSelector').style.display = 'none';
+            }, 200);
+        }
+
+        function ajouterCategorie(event) {
+            event.preventDefault();
+            
+            const formData = new FormData(event.target);
+            
+            fetch('/categories/ajouter', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                const resultat = document.getElementById('resultatAjout');
+                
+                if (data.success) {
+                    resultat.innerHTML = `
+                        <div class="alert alert-success mt-3">
+                            <i class="bi bi-check-circle me-2"></i>${data.message}
+                        </div>
+                    `;
+                    
+                    // Réinitialiser
+                    document.getElementById('ajouterForm').reset();
+                    document.getElementById('emojiCategorie').value = '📦';
+                    
+                    // Recharger après 1.5s
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1500);
+                } else {
+                    resultat.innerHTML = `
+                        <div class="alert alert-danger mt-3">
+                            <i class="bi bi-x-circle me-2"></i>${data.message}
+                        </div>
+                    `;
+                }
+            })
+            .catch(error => {
+                document.getElementById('resultatAjout').innerHTML = `
+                    <div class="alert alert-danger mt-3">
+                        <i class="bi bi-x-circle me-2"></i>Erreur de connexion
+                    </div>
+                `;
+            });
+        }
+
+        function confirmerSuppression(id, nom) {
+            if (confirm(`🗑️ Supprimer la catégorie "${nom}" ?\n\nLes produits seront déplacés vers "Général".`)) {
+                window.location.href = `/categories/supprimer/${id}`;
+            }
+        }
+
+        // Fermer sélecteur en cliquant ailleurs
+        document.addEventListener('click', function(event) {
+            const selector = document.getElementById('emojiSelector');
+            const input = document.getElementById('emojiCategorie');
+            
+            if (!selector.contains(event.target) && event.target !== input) {
+                selector.style.display = 'none';
+            }
+        });
+
+        // Auto-focus
+        document.addEventListener('DOMContentLoaded', function() {
+            document.getElementById('nomCategorie').focus();
+        });
+    </script>
+</body>
+</html>

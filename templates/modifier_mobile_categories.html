@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📱 Modifier Produit - Boutique Mobile</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        body { 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+            min-height: 100vh;
+        }
+        .card { 
+            border: none; 
+            border-radius: 15px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            background: rgba(255,255,255,0.95);
+        }
+        .current-info {
+            background: #e3f2fd;
+            border-radius: 10px;
+            padding: 15px;
+            margin-bottom: 20px;
+        }
+        .category-change-alert {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 8px;
+            padding: 10px;
+            margin-top: 10px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container mt-5">
+        <div class="row justify-content-center">
+            <div class="col-md-8">
+                <div class="card">
+                    <div class="card-header text-center bg-warning text-dark">
+                        <h3><i class="bi bi-pencil me-2"></i>📝 Modifier le Produit</h3>
+                        <p class="mb-0">{{ produit.nom }}</p>
+                    </div>
+                    <div class="card-body">
+                        <!-- Informations actuelles -->
+                        <div class="current-info">
+                            <h6><i class="bi bi-info-circle me-2"></i>Informations actuelles</h6>
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <strong>Catégorie:</strong> 
+                                    {% for cat in categories %}
+                                        {% if cat.nom == produit.categorie %}
+                                            {{ cat.emoji }} {{ cat.nom }}
+                                            {% if not cat.est_systeme %}
+                                                <span class="badge bg-success ms-1">Personnalisée</span>
+                                            {% else %}
+                                                <span class="badge bg-primary ms-1">Système</span>
+                                            {% endif %}
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                                <div class="col-md-6">
+                                    <strong>Code:</strong> <code>{{ produit.code_barres }}</code>
+                                </div>
+                            </div>
+                            <div class="row mt-2">
+                                <div class="col-md-6">
+                                    <strong>Prix:</strong> {{ "%.2f"|format(produit.prix) }}€
+                                </div>
+                                <div class="col-md-6">
+                                    <strong>Stock:</strong> 
+                                    <span class="badge 
+                                        {% if produit.stock == 0 %}bg-danger
+                                        {% elif produit.stock <= 2 %}bg-warning
+                                        {% elif produit.stock <= 5 %}bg-info
+                                        {% else %}bg-success{% endif %}">
+                                        {{ produit.stock }}
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <form method="POST" id="modifierForm">
+                            <!-- Catégorie avec toutes vos catégories -->
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">
+                                    <i class="bi bi-folder me-2"></i>📂 Catégorie *
+                                </label>
+                                <select class="form-select form-select-lg" name="categorie" id="categorie" required onchange="verifierChangementCategorie()">
+                                    {% for cat in categories %}
+                                    <option value="{{ cat.nom }}" 
+                                            data-emoji="{{ cat.emoji }}" 
+                                            data-systeme="{{ cat.est_systeme }}"
+                                            {% if produit.categorie == cat.nom %}selected{% endif %}>
+                                        {{ cat.emoji }} {{ cat.nom }}
+                                        {% if not cat.est_systeme %} (Personnalisée){% endif %}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                                
+                                <!-- Alerte changement de catégorie -->
+                                <div id="categoryChangeAlert" class="category-change-alert">
+                                    <i class="bi bi-exclamation-triangle text-warning me-2"></i>
+                                    <strong>Attention :</strong> Vous changez la catégorie de 
+                                    <strong>"{{ produit.categorie }}"</strong> vers <strong id="newCategoryName"></strong>.
+                                    <br><small>Cela affectera les statistiques et le classement du produit.</small>
+                                </div>
+                            </div>
+
+                            <!-- Lien vers gestion des catégories -->
+                            <div class="mb-3">
+                                <div class="alert alert-info">
+                                    <i class="bi bi-info-circle me-2"></i>
+                                    <strong>💡 Astuce :</strong> 
+                                    Besoin d'une nouvelle catégorie ? 
+                                    <a href="/categories" class="alert-link" target="_blank">
+                                        <i class="bi bi-folder-plus me-1"></i>Gérez vos catégories
+                                    </a>
+                                </div>
+                            </div>
+
+                            <!-- Nom du produit -->
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">
+                                    <i class="bi bi-tag me-2"></i>📝 Nom du produit *
+                                </label>
+                                <input type="text" class="form-control form-control-lg" name="nom" 
+                                       value="{{ produit.nom }}" required>
+                            </div>
+
+                            <!-- Code-barres -->
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">
+                                    <i class="bi bi-upc me-2"></i>🏷️ Code-barres *
+                                </label>
+                                <input type="text" class="form-control form-control-lg" name="code_barres" 
+                                       value="{{ produit.code_barres }}" required>
+                                <div class="form-text">
+                                    <i class="bi bi-exclamation-triangle me-1"></i>
+                                    Attention : modifier le code-barres peut affecter le scanner
+                                </div>
+                            </div>
+
+                            <!-- Prix -->
+                            <div class="mb-3">
+                                <label class="form-label fw-bold">
+                                    <i class="bi bi-currency-euro me-2"></i>💰 Prix (€) *
+                                </label>
+                                <input type="number" class="form-control form-control-lg" name="prix" 
+                                       step="0.01" min="0" value="{{ produit.prix }}" required>
+                            </div>
+
+                            <!-- Stock -->
+                            <div class="mb-4">
+                                <label class="form-label fw-bold">
+                                    <i class="bi bi-box me-2"></i>📦 Stock *
+                                </label>
+                                <div class="input-group">
+                                    <input type="number" class="form-control form-control-lg" name="stock" 
+                                           min="0" value="{{ produit.stock }}" required id="stockInput">
+                                    <button type="button" class="btn btn-outline-success" onclick="ajusterStock(1)">
+                                        <i class="bi bi-plus"></i>
+                                    </button>
+                                    <button type="button" class="btn btn-outline-danger" onclick="ajusterStock(-1)">
+                                        <i class="bi bi-dash"></i>
+                                    </button>
+                                </div>
+                                <div class="form-text">
+                                    <i class="bi bi-info-circle me-1"></i>
+                                    Utilisez les boutons + et - pour ajuster rapidement
+                                </div>
+                            </div>
+
+                            <!-- Actions rapides -->
+                            <div class="row mb-4">
+                                <div class="col-12">
+                                    <h6><i class="bi bi-lightning me-2"></i>Actions rapides</h6>
+                                    <div class="btn-group" role="group">
+                                        <button type="button" class="btn btn-outline-info btn-sm" onclick="setStock(0)">
+                                            Stock = 0
+                                        </button>
+                                        <button type="button" class="btn btn-outline-warning btn-sm" onclick="setStock(5)">
+                                            Stock = 5
+                                        </button>
+                                        <button type="button" class="btn btn-outline-success btn-sm" onclick="setStock(10)">
+                                            Stock = 10
+                                        </button>
+                                        <button type="button" class="btn btn-outline-primary btn-sm" onclick="setStock(20)">
+                                            Stock = 20
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Boutons -->
+                            <div class="d-grid gap-2 d-md-flex justify-content-md-between">
+                                <div>
+                                    <a href="/" class="btn btn-secondary btn-lg">
+                                        <i class="bi bi-arrow-left me-2"></i>Retour
+                                    </a>
+                                </div>
+                                <div>
+                                    <button type="button" class="btn btn-danger btn-lg me-2" 
+                                            onclick="confirmerSuppression()">
+                                        <i class="bi bi-trash me-2"></i>Supprimer
+                                    </button>
+                                    <button type="submit" class="btn btn-warning btn-lg">
+                                        <i class="bi bi-check-circle me-2"></i>Modifier
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <!-- Historique et informations -->
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <h6><i class="bi bi-clock-history me-2"></i>📊 Informations du produit</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6>📅 Dates</h6>
+                                <ul class="list-unstyled">
+                                    <li><strong>Créé:</strong> {{ produit.date_creation.strftime('%d/%m/%Y %H:%M') if produit.date_creation else 'Non disponible' }}</li>
+                                    <li><strong>Modifié:</strong> {{ produit.date_modification.strftime('%d/%m/%Y %H:%M') if produit.date_modification else 'Jamais' }}</li>
+                                </ul>
+                            </div>
+                            <div class="col-md-6">
+                                <h6>📈 Statut Stock</h6>
+                                <ul class="list-unstyled">
+                                    {% if produit.stock == 0 %}
+                                    <li><span class="badge bg-danger">🚨 Rupture de stock</span></li>
+                                    <li><small class="text-muted">Réapprovisionnement urgent</small></li>
+                                    {% elif produit.stock <= 2 %}
+                                    <li><span class="badge bg-warning">⚠️ Stock critique</span></li>
+                                    <li><small class="text-muted">Prévoir réapprovisionnement</small></li>
+                                    {% elif produit.stock <= 5 %}
+                                    <li><span class="badge bg-info">📦 Stock faible</span></li>
+                                    <li><small class="text-muted">Surveiller le stock</small></li>
+                                    {% else %}
+                                    <li><span class="badge bg-success">✅ Stock correct</span></li>
+                                    <li><small class="text-muted">Niveau satisfaisant</small></li>
+                                    {% endif %}
+                                </ul>
+                            </div>
+                        </div>
+                        
+                        <!-- Informations catégorie -->
+                        <div class="row mt-3">
+                            <div class="col-12">
+                                <h6>📂 Informations Catégorie</h6>
+                                <div class="alert alert-light">
+                                    <div class="d-flex align-items-center">
+                                        {% for cat in categories %}
+                                            {% if cat.nom == produit.categorie %}
+                                                <span class="fs-3 me-3">{{ cat.emoji }}</span>
+                                                <div>
+                                                    <strong>{{ cat.nom }}</strong>
+                                                    {% if not cat.est_systeme %}
+                                                        <span class="badge bg-success ms-2">Catégorie Personnalisée</span>
+                                                    {% else %}
+                                                        <span class="badge bg-primary ms-2">Catégorie Système</span>
+                                                    {% endif %}
+                                                    {% if cat.description %}
+                                                        <br><small class="text-muted">{{ cat.description }}</small>
+                                                    {% endif %}
+                                                </div>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const categorieOriginale = "{{ produit.categorie }}";
+
+        function ajusterStock(delta) {
+            const stockInput = document.getElementById('stockInput');
+            const currentValue = parseInt(stockInput.value) || 0;
+            const newValue = Math.max(0, currentValue + delta);
+            stockInput.value = newValue;
+            
+            // Animation visuelle
+            stockInput.style.background = delta > 0 ? '#d4edda' : '#f8d7da';
+            setTimeout(() => {
+                stockInput.style.background = '';
+            }, 500);
+        }
+
+        function setStock(value) {
+            const stockInput = document.getElementById('stockInput');
+            stockInput.value = value;
+            
+            // Animation visuelle
+            stockInput.style.background = '#cce5ff';
+            setTimeout(() => {
+                stockInput.style.background = '';
+            }, 500);
+        }
+
+        function verifierChangementCategorie() {
+            const categorieSelect = document.getElementById('categorie');
+            const selectedOption = categorieSelect.options[categorieSelect.selectedIndex];
+            const nouvelleCategorie = selectedOption.value;
+            const alert = document.getElementById('categoryChangeAlert');
+            
+            if (nouvelleCategorie !== categorieOriginale) {
+                document.getElementById('newCategoryName').textContent = nouvelleCategorie;
+                alert.style.display = 'block';
+            } else {
+                alert.style.display = 'none';
+            }
+        }
+
+        function confirmerSuppression() {
+            const nom = "{{ produit.nom }}";
+            const categorie = "{{ produit.categorie }}";
+            
+            let message = `⚠️ Êtes-vous sûr de vouloir supprimer "${nom}" ?\n\n`;
+            message += `📂 Catégorie: ${categorie}\n`;
+            message += `🏷️ Code: {{ produit.code_barres }}\n`;
+            message += `📦 Stock: {{ produit.stock }}\n\n`;
+            message += `Cette action est irréversible.`;
+            
+            if (confirm(message)) {
+                window.location.href = `/supprimer/{{ produit.id }}`;
+            }
+        }
+
+        // Raccourcis clavier
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey) {
+                switch(e.key) {
+                    case 'ArrowUp':
+                        e.preventDefault();
+                        ajusterStock(1);
+                        break;
+                    case 'ArrowDown':
+                        e.preventDefault();
+                        ajusterStock(-1);
+                        break;
+                    case 's':
+                        e.preventDefault();
+                        document.getElementById('modifierForm').submit();
+                        break;
+                }
+            }
+        });
+
+        // Validation du formulaire
+        document.getElementById('modifierForm').addEventListener('submit', function(e) {
+            const categorieSelect = document.getElementById('categorie');
+            const selectedOption = categorieSelect.options[categorieSelect.selectedIndex];
+            const nouvelleCategorie = selectedOption.value;
+            
+            // Confirmation si changement de catégorie
+            if (nouvelleCategorie !== categorieOriginale) {
+                const isPersonnalisee = selectedOption.text.includes('(Personnalisée)');
+                let message = `🔄 Vous changez la catégorie de "${categorieOriginale}" vers "${nouvelleCategorie}".\n\n`;
+                
+                if (isPersonnalisee) {
+                    message += `📂 "${nouvelleCategorie}" est une catégorie personnalisée.\n\n`;
+                }
+                
+                message += `Cela affectera les statistiques et le classement.\n\nContinuer ?`;
+                
+                if (!confirm(message)) {
+                    e.preventDefault();
+                    return;
+                }
+            }
+        });
+
+        // Auto-focus sur le nom
+        document.addEventListener('DOMContentLoaded', function() {
+            document.querySelector('input[name="nom"]').focus();
+            
+            // Vérifier le changement de catégorie au chargement
+            verifierChangementCategorie();
+        });
+    </script>
+</body>
+</html>

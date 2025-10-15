@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📱 Boutique Mobile - Inventaire</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        body { 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); 
+            min-height: 100vh;
+        }
+        .card { 
+            border: none; 
+            border-radius: 15px; 
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            background: rgba(255,255,255,0.95);
+        }
+        .product-card {
+            transition: transform 0.3s ease;
+            border-left: 4px solid #007bff;
+        }
+        .product-card:hover {
+            transform: translateY(-3px);
+        }
+        .stock-badge {
+            font-size: 0.9em;
+            padding: 6px 12px;
+        }
+        .category-filter {
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        .category-filter:hover {
+            background: #e9ecef;
+        }
+        .category-filter.active {
+            background: #007bff;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-fluid mt-4">
+        <!-- En-tête -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header text-center bg-primary text-white">
+                        <h1><i class="bi bi-shop me-2"></i>📱 Boutique Réparation Mobile</h1>
+                        <p class="mb-0">Gestion d'inventaire avec catégories personnalisées</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Contrôles et filtres -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body">
+                        <form method="GET" class="row g-3">
+                            <!-- Recherche -->
+                            <div class="col-md-4">
+                                <label class="form-label fw-bold">
+                                    <i class="bi bi-search me-1"></i>🔍 Rechercher
+                                </label>
+                                <input type="text" class="form-control" name="recherche" 
+                                       value="{{ recherche_actuelle }}" 
+                                       placeholder="Nom ou code-barres...">
+                            </div>
+                            
+                            <!-- Filtre catégorie -->
+                            <div class="col-md-3">
+                                <label class="form-label fw-bold">
+                                    <i class="bi bi-folder me-1"></i>📂 Catégorie
+                                </label>
+                                <select class="form-select" name="categorie">
+                                    <option value="toutes" {% if categorie_actuelle == 'toutes' %}selected{% endif %}>
+                                        Toutes les catégories
+                                    </option>
+                                    {% for cat in categories %}
+                                    <option value="{{ cat.nom }}" {% if categorie_actuelle == cat.nom %}selected{% endif %}>
+                                        {{ cat.emoji }} {{ cat.nom }}
+                                    </option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                            
+                            <!-- Tri -->
+                            <div class="col-md-3">
+                                <label class="form-label fw-bold">
+                                    <i class="bi bi-sort-down me-1"></i>📊 Trier par
+                                </label>
+                                <select class="form-select" name="tri">
+                                    <option value="nom_asc" {% if tri_actuel == 'nom_asc' %}selected{% endif %}>Nom A→Z</option>
+                                    <option value="nom_desc" {% if tri_actuel == 'nom_desc' %}selected{% endif %}>Nom Z→A</option>
+                                    <option value="prix_asc" {% if tri_actuel == 'prix_asc' %}selected{% endif %}>Prix ↗</option>
+                                    <option value="prix_desc" {% if tri_actuel == 'prix_desc' %}selected{% endif %}>Prix ↘</option>
+                                    <option value="stock_asc" {% if tri_actuel == 'stock_asc' %}selected{% endif %}>Stock ↗</option>
+                                    <option value="stock_desc" {% if tri_actuel == 'stock_desc' %}selected{% endif %}>Stock ↘</option>
+                                    <option value="categorie_asc" {% if tri_actuel == 'categorie_asc' %}selected{% endif %}>Catégorie</option>
+                                </select>
+                            </div>
+                            
+                            <!-- Actions -->
+                            <div class="col-md-2 d-flex align-items-end">
+                                <button type="submit" class="btn btn-primary w-100">
+                                    <i class="bi bi-funnel me-1"></i>Filtrer
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Actions rapides -->
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="row g-2">
+                            <div class="col-md-2">
+                                <a href="/ajouter" class="btn btn-success w-100">
+                                    <i class="bi bi-plus-circle me-1"></i>📦 Ajouter
+                                </a>
+                            </div>
+                            <div class="col-md-2">
+                                <a href="/scanner" class="btn btn-warning w-100">
+                                    <i class="bi bi-upc-scan me-1"></i>📱 Scanner
+                                </a>
+                            </div>
+                            <div class="col-md-2">
+                                <a href="/categories" class="btn btn-info w-100">
+                                    <i class="bi bi-folder-plus me-1"></i>📂 Catégories
+                                </a>
+                            </div>
+                            <div class="col-md-2">
+                                <a href="/codes-barres" class="btn btn-secondary w-100">
+                                    <i class="bi bi-upc me-1"></i>🏷️ Codes-barres
+                                </a>
+                            </div>
+                            <div class="col-md-2">
+                                <a href="/statistiques" class="btn btn-primary w-100">
+                                    <i class="bi bi-graph-up me-1"></i>📊 Stats
+                                </a>
+                            </div>
+                            <div class="col-md-2">
+                                <a href="/export" class="btn btn-outline-success w-100">
+                                    <i class="bi bi-download me-1"></i>💾 Export
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Statistiques rapides par catégorie -->
+        {% if stats_categories %}
+        <div class="row mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h6><i class="bi bi-pie-chart me-2"></i>📊 Aperçu par Catégorie</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-2">
+                            {% for stat in stats_categories %}
+                            <div class="col-md-3 col-sm-6">
+                                <div class="card bg-light">
+                                    <div class="card-body text-center py-2">
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <div>
+                                                {% for cat in categories %}
+                                                    {% if cat.nom == stat.categorie %}
+                                                        <span class="fs-5">{{ cat.emoji }}</span>
+                                                    {% endif %}
+                                                {% endfor %}
+                                                <strong class="ms-1">{{ stat.categorie }}</strong>
+                                            </div>
+                                            <div>
+                                                <span class="badge bg-primary">{{ stat.total }}</span>
+                                                {% if stat.ruptures > 0 %}
+                                                <span class="badge bg-danger">{{ stat.ruptures }} 🚨</span>
+                                                {% endif %}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Liste des produits -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header d-flex justify-content-between align-items-center">
+                        <h5><i class="bi bi-box me-2"></i>📦 Inventaire ({{ produits|length }} produits)</h5>
+                        <div>
+                            {% if recherche_actuelle %}
+                            <span class="badge bg-info">Recherche: "{{ recherche_actuelle }}"</span>
+                            {% endif %}
+                            {% if categorie_actuelle != 'toutes' %}
+                            <span class="badge bg-primary">Catégorie: {{ categorie_actuelle }}</span>
+                            {% endif %}
+                        </div>
+                    </div>
+                    <div class="card-body">
+                        {% if produits %}
+                        <div class="row g-3">
+                            {% for produit in produits %}
+                            <div class="col-md-6 col-lg-4">
+                                <div class="card product-card h-100">
+                                    <div class="card-body">
+                                        <div class="d-flex justify-content-between align-items-start mb-2">
+                                            <div class="flex-grow-1">
+                                                <div class="d-flex align-items-center mb-2">
+                                                    {% for cat in categories %}
+                                                        {% if cat.nom == produit.categorie %}
+                                                            <span class="fs-4 me-2">{{ cat.emoji }}</span>
+                                                        {% endif %}
+                                                    {% endfor %}
+                                                    <span class="badge bg-secondary">{{ produit.categorie }}</span>
+                                                </div>
+                                                <h6 class="card-title">{{ produit.nom }}</h6>
+                                                <p class="card-text small text-muted mb-2">
+                                                    <i class="bi bi-upc me-1"></i>
+                                                    <code>{{ produit.code_barres }}</code>
+                                                </p>
+                                            </div>
+                                            
+                                            <div class="text-end">
+                                                <span class="badge stock-badge
+                                                    {% if produit.stock == 0 %}bg-danger
+                                                    {% elif produit.stock <= 2 %}bg-warning
+                                                    {% elif produit.stock <= 5 %}bg-info
+                                                    {% else %}bg-success{% endif %}">
+                                                    {% if produit.stock == 0 %}🚨
+                                                    {% elif produit.stock <= 2 %}⚠️
+                                                    {% elif produit.stock <= 5 %}📦
+                                                    {% else %}✅{% endif %} {{ produit.stock }}
+                                                </span>
+                                            </div>
+                                        </div>
+                                        
+                                        <div class="d-flex justify-content-between align-items-center">
+                                            <div>
+                                                <strong class="text-success">{{ "%.2f"|format(produit.prix) }}€</strong>
+                                            </div>
+                                            <div>
+                                                <a href="/modifier/{{ produit.id }}" class="btn btn-sm btn-outline-primary me-1">
+                                                    <i class="bi bi-pencil"></i>
+                                                </a>
+                                                <button class="btn btn-sm btn-outline-danger" 
+                                                        onclick="confirmerSuppression({{ produit.id }}, '{{ produit.nom }}')">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </div>
+                                        </div>
+                                        
+                                        {% if produit.stock == 0 %}
+                                        <div class="mt-2">
+                                            <small class="text-danger">
+                                                <i class="bi bi-exclamation-triangle me-1"></i>
+                                                Rupture de stock
+                                            </small>
+                                        </div>
+                                        {% elif produit.stock <= 2 %}
+                                        <div class="mt-2">
+                                            <small class="text-warning">
+                                                <i class="bi bi-exclamation-triangle me-1"></i>
+                                                Stock critique
+                                            </small>
+                                        </div>
+                                        {% elif produit.stock <= 5 %}
+                                        <div class="mt-2">
+                                            <small class="text-info">
+                                                <i class="bi bi-info-circle me-1"></i>
+                                                Stock faible
+                                            </small>
+                                        </div>
+                                        {% endif %}
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <div class="text-center py-5">
+                            <i class="bi bi-inbox display-1 text-muted"></i>
+                            <h4 class="text-muted mt-3">Aucun produit trouvé</h4>
+                            {% if recherche_actuelle or categorie_actuelle != 'toutes' %}
+                            <p class="text-muted">Essayez de modifier vos filtres de recherche</p>
+                            <a href="/" class="btn btn-outline-primary">
+                                <i class="bi bi-arrow-clockwise me-1"></i>Réinitialiser les filtres
+                            </a>
+                            {% else %}
+                            <p class="text-muted">Commencez par ajouter vos premiers produits</p>
+                            <a href="/ajouter" class="btn btn-success btn-lg">
+                                <i class="bi bi-plus-circle me-2"></i>Ajouter le Premier Produit
+                            </a>
+                            {% endif %}
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Aide -->
+        <div class="row mt-4 mb-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h6><i class="bi bi-question-circle me-2"></i>💡 Aide Rapide</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <h6>📂 Catégories</h6>
+                                <ul class="small">
+                                    <li><strong>Gérer</strong> : Bouton "Catégories"</li>
+                                    <li><strong>Ajouter</strong> : Vos catégories personnalisées</li>
+                                    <li><strong>Supprimer</strong> : Sauf catégories système</li>
+                                </ul>
+                            </div>
+                            <div class="col-md-3">
+                                <h6>📦 Produits</h6>
+                                <ul class="small">
+                                    <li><strong>Ajouter</strong> : Choisir parmi toutes vos catégories</li>
+                                    <li><strong>Scanner</strong> : Décrément automatique</li>
+                                    <li><strong>Modifier</strong> : Changer de catégorie</li>
+                                </ul>
+                            </div>
+                            <div class="col-md-3">
+                                <h6>🔍 Filtres</h6>
+                                <ul class="small">
+                                    <li><strong>Recherche</strong> : Nom ou code-barres</li>
+                                    <li><strong>Catégorie</strong> : Toutes vos catégories</li>
+                                    <li><strong>Tri</strong> : Multiple critères</li>
+                                </ul>
+                            </div>
+                            <div class="col-md-3">
+                                <h6>📊 Alertes Stock</h6>
+                                <ul class="small">
+                                    <li><span class="badge bg-danger">🚨</span> Rupture (0)</li>
+                                    <li><span class="badge bg-warning">⚠️</span> Critique (≤2)</li>
+                                    <li><span class="badge bg-info">📦</span> Faible (≤5)</li>
+                                    <li><span class="badge bg-success">✅</span> Correct (>5)</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        function confirmerSuppression(id, nom) {
+            if (confirm(`⚠️ Êtes-vous sûr de vouloir supprimer "${nom}" ?\n\nCette action est irréversible.`)) {
+                window.location.href = `/supprimer/${id}`;
+            }
+        }
+
+        // Auto-refresh toutes les 30 secondes
+        setInterval(function() {
+            // Seulement si pas de filtres actifs
+            const url = new URL(window.location);
+            if (!url.searchParams.has('recherche') && 
+                (!url.searchParams.has('categorie') || url.searchParams.get('categorie') === 'toutes')) {
+                window.location.reload();
+            }
+        }, 30000);
+
+        // Animation des cartes au chargement
+        document.addEventListener('DOMContentLoaded', function() {
+            const cards = document.querySelectorAll('.product-card');
+            cards.forEach((card, index) => {
+                setTimeout(() => {
+                    card.style.opacity = '0';
+                    card.style.transform = 'translateY(20px)';
+                    card.style.transition = 'all 0.5s ease';
+                    
+                    setTimeout(() => {
+                        card.style.opacity = '1';
+                        card.style.transform = 'translateY(0)';
+                    }, 50);
+                }, index * 50);
+            });
+        });
+    </script>
+</body>
+</html>

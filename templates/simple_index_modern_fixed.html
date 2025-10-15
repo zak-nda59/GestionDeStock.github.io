@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>📱 Boutique Mobile Pro</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        * { font-family: 'Poppins', sans-serif; }
+        
+        body { 
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .glass-card {
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            box-shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.37);
+        }
+        
+        .product-card {
+            background: white;
+            border-radius: 20px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            transition: all 0.3s ease;
+            border-top: 4px solid #667eea;
+        }
+        
+        .product-card:hover {
+            transform: translateY(-10px);
+            box-shadow: 0 20px 50px rgba(102, 126, 234, 0.3);
+        }
+        
+        .search-container {
+            background: rgba(255, 255, 255, 0.9);
+            border-radius: 25px;
+            padding: 15px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+        
+        .search-input {
+            border: none;
+            background: transparent;
+            font-size: 18px;
+            padding: 10px 20px;
+        }
+        
+        .search-input:focus {
+            outline: none;
+            box-shadow: none;
+        }
+        
+        .btn-modern {
+            border-radius: 15px;
+            padding: 12px 25px;
+            font-weight: 600;
+            border: none;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary-modern {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+        }
+        
+        .btn-primary-modern:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .stats-mini {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 8px 15px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 600;
+        }
+        
+        .floating-menu {
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            z-index: 1000;
+        }
+        
+        .fab-main {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            border: none;
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.4);
+            font-size: 24px;
+            transition: all 0.3s ease;
+        }
+        
+        .fab-main:hover {
+            transform: scale(1.1);
+            box-shadow: 0 12px 35px rgba(102, 126, 234, 0.6);
+        }
+        
+        .fab-item {
+            position: absolute;
+            bottom: 70px;
+            right: 0;
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: linear-gradient(45deg, #ff6b6b, #ee5a52);
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+            transition: all 0.3s ease;
+            opacity: 0;
+            transform: scale(0);
+        }
+        
+        .fab-item.show {
+            opacity: 1;
+            transform: scale(1);
+        }
+        
+        .fab-item:nth-child(1) { transform: translate(-70px, -10px); background: linear-gradient(45deg, #4ecdc4, #44a08d); }
+        .fab-item:nth-child(2) { transform: translate(-50px, -60px); background: linear-gradient(45deg, #f093fb, #f5576c); }
+        .fab-item:nth-child(3) { transform: translate(0px, -80px); background: linear-gradient(45deg, #4facfe, #00f2fe); }
+        .fab-item:nth-child(4) { transform: translate(50px, -60px); background: linear-gradient(45deg, #43e97b, #38f9d7); }
+        .fab-item:nth-child(5) { transform: translate(70px, -10px); background: linear-gradient(45deg, #fa709a, #fee140); }
+        
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <!-- En-tête moderne -->
+    <nav class="navbar navbar-expand-lg" style="background: rgba(255,255,255,0.1); backdrop-filter: blur(10px);">
+        <div class="container">
+            <span class="navbar-brand text-white fw-bold fs-3">
+                📱 Boutique Mobile Pro
+            </span>
+            <div class="d-flex align-items-center gap-2">
+                <a href="/produits" class="btn btn-outline-light btn-sm">
+                    <i class="bi bi-grid-3x3-gap me-1"></i>Voir tous
+                </a>
+                <div class="stats-mini text-white">
+                    <i class="bi bi-box me-1"></i>{{ total }}
+                </div>
+                {% if ruptures > 0 %}
+                <div class="stats-mini text-white">
+                    <i class="bi bi-exclamation-triangle me-1"></i>{{ ruptures }}
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mt-4">
+        <!-- Recherche moderne -->
+        <div class="search-container">
+            <form method="GET" class="d-flex align-items-center gap-3">
+                <input type="text" name="q" class="form-control search-input flex-grow-1" 
+                       placeholder="🔍 Rechercher un produit..." 
+                       value="{{ recherche }}">
+                <select name="cat" class="form-select" style="max-width: 200px;">
+                    <option value="">🌟 Toutes catégories</option>
+                    {% for cat in categories %}
+                    <option value="{{ cat.nom }}" {% if categorie_filtre == cat.nom %}selected{% endif %}>
+                        {{ cat.emoji }} {{ cat.nom }}
+                    </option>
+                    {% endfor %}
+                </select>
+                <button type="submit" class="btn btn-primary-modern btn-modern">
+                    <i class="bi bi-search"></i>
+                </button>
+            </form>
+        </div>
+
+        <!-- Produits -->
+        {% if produits %}
+        <div class="row">
+            {% for produit in produits %}
+            <div class="col-lg-4 col-md-6 mb-4">
+                <div class="product-card">
+                    <div class="d-flex justify-content-between align-items-start mb-3">
+                        <div>
+                            {% for cat in categories %}
+                                {% if cat.nom == produit.categorie %}
+                                    <span style="font-size: 2rem;">{{ cat.emoji }}</span>
+                                {% endif %}
+                            {% endfor %}
+                        </div>
+                        <span class="badge 
+                            {% if produit.stock == 0 %}bg-danger
+                            {% elif produit.stock <= 5 %}bg-warning
+                            {% else %}bg-success{% endif %} fs-6">
+                            {{ produit.stock }}
+                        </span>
+                    </div>
+                    
+                    <h5 class="fw-bold mb-2">{{ produit.nom }}</h5>
+                    <p class="text-muted small mb-2">{{ produit.categorie }}</p>
+                    <code class="small">{{ produit.code_barres }}</code>
+                    
+                    <div class="d-flex justify-content-between align-items-center mt-3">
+                        <span class="h5 text-primary mb-0">{{ "%.2f"|format(produit.prix) }}€</span>
+                        <div class="btn-group">
+                            <a href="/modifier/{{ produit.id }}" class="btn btn-outline-primary btn-sm">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            <a href="/supprimer/{{ produit.id }}" class="btn btn-outline-danger btn-sm"
+                               onclick="return confirm('Supprimer {{ produit.nom }} ?')">
+                                <i class="bi bi-trash"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="glass-card p-5">
+            <div class="empty-state">
+                {% if recherche %}
+                <i class="bi bi-search display-1 opacity-50"></i>
+                <h4 class="mt-3">Aucun résultat</h4>
+                <p class="opacity-75">Aucun produit ne correspond à "{{ recherche }}"</p>
+                <a href="/" class="btn btn-light btn-lg mt-3">
+                    <i class="bi bi-arrow-left me-2"></i>Retour
+                </a>
+                {% else %}
+                <i class="bi bi-inbox display-1 opacity-50"></i>
+                <h4 class="mt-3">Votre inventaire est vide</h4>
+                <p class="opacity-75">Commencez par ajouter vos premiers produits</p>
+                <a href="/ajouter" class="btn btn-light btn-lg mt-3">
+                    <i class="bi bi-plus-circle me-2"></i>Ajouter un produit
+                </a>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Menu flottant -->
+    <div class="floating-menu">
+        <a href="/codes-barres" class="fab-item" title="Codes-barres">
+            <i class="bi bi-upc-scan"></i>
+        </a>
+        <a href="/statistiques" class="fab-item" title="Statistiques">
+            <i class="bi bi-graph-up"></i>
+        </a>
+        <a href="/produits" class="fab-item" title="Voir tous les produits">
+            <i class="bi bi-grid-3x3-gap"></i>
+        </a>
+        <a href="/scanner" class="fab-item" title="Scanner">
+            <i class="bi bi-camera"></i>
+        </a>
+        <a href="/ajouter" class="fab-item" title="Ajouter">
+            <i class="bi bi-plus"></i>
+        </a>
+        <button class="fab-main" onclick="toggleFab()">
+            <i class="bi bi-grid"></i>
+        </button>
+    </div>
+
+    <script>
+        let fabOpen = false;
+        
+        function toggleFab() {
+            const items = document.querySelectorAll('.fab-item');
+            fabOpen = !fabOpen;
+            
+            items.forEach((item, index) => {
+                if (fabOpen) {
+                    setTimeout(() => {
+                        item.classList.add('show');
+                    }, index * 100);
+                } else {
+                    item.classList.remove('show');
+                }
+            });
+        }
+
+        // Animation d'entrée
+        document.addEventListener('DOMContentLoaded', function() {
+            const cards = document.querySelectorAll('.product-card');
+            cards.forEach((card, index) => {
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(30px)';
+                
+                setTimeout(() => {
+                    card.style.transition = 'all 0.6s ease';
+                    card.style.opacity = '1';
+                    card.style.transform = 'translateY(0)';
+                }, index * 100);
+            });
+        });
+    </script>
+</body>
+</html>
