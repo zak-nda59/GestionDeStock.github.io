@@ -1,0 +1,6 @@
+Version Complète - 2.1 FORCE UPDATE
+Déployée le: 16/10/2025 15:30
+Fonctionnalités: Interface complète activée
+Templates: index_intuitif.html + scanner_complet.html
+Application: 100% Fonctionnelle
+Cache: Forcé à se vider
