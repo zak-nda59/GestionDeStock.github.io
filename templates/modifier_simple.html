@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>✏️ Modifier {{ produit.nom }}</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        body { 
+            background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+            min-height: 100vh;
+            padding: 20px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        .form-container {
+            max-width: 700px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 25px;
+            padding: 40px;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.1);
+        }
+        
+        .form-header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+        
+        .form-title {
+            color: #333;
+            font-size: 2.2rem;
+            font-weight: 700;
+            margin-bottom: 15px;
+        }
+        
+        .form-subtitle {
+            color: #666;
+            font-size: 1.1rem;
+            margin-bottom: 25px;
+        }
+        
+        .current-stock-info {
+            background: linear-gradient(45deg, #e3f2fd, #f3e5f5);
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            margin-bottom: 30px;
+            border-left: 5px solid #4facfe;
+        }
+        
+        .stock-label {
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 5px;
+        }
+        
+        .stock-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #333;
+        }
+        
+        .stock-note {
+            font-size: 0.85rem;
+            color: #666;
+            margin-top: 10px;
+            font-style: italic;
+        }
+        
+        .form-group {
+            margin-bottom: 25px;
+        }
+        
+        .form-label {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 1.1rem;
+            display: flex;
+            align-items: center;
+        }
+        
+        .form-control-modern {
+            border: 2px solid #e9ecef;
+            border-radius: 15px;
+            padding: 18px 25px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            background: #f8f9fa;
+        }
+        
+        .form-control-modern:focus {
+            border-color: #4facfe;
+            box-shadow: 0 0 0 0.2rem rgba(79, 172, 254, 0.25);
+            background: white;
+            outline: none;
+        }
+        
+        .form-control-modern:valid {
+            border-color: #28a745;
+        }
+        
+        .input-group-text {
+            background: #4facfe;
+            color: white;
+            border: 2px solid #4facfe;
+            border-radius: 15px 0 0 15px;
+            font-weight: 600;
+        }
+        
+        .form-control-modern.with-icon {
+            border-radius: 0 15px 15px 0;
+        }
+        
+        .btn-save {
+            background: linear-gradient(45deg, #28a745, #20c997);
+            color: white;
+            border: none;
+            border-radius: 15px;
+            padding: 18px 40px;
+            font-size: 1.2rem;
+            font-weight: 600;
+            width: 100%;
+            transition: all 0.3s ease;
+            margin-bottom: 15px;
+        }
+        
+        .btn-save:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 10px 25px rgba(40, 167, 69, 0.4);
+            color: white;
+        }
+        
+        .btn-cancel {
+            background: #6c757d;
+            color: white;
+            border: none;
+            border-radius: 15px;
+            padding: 15px 30px;
+            font-size: 1rem;
+            font-weight: 500;
+            width: 100%;
+            transition: all 0.3s ease;
+        }
+        
+        .btn-cancel:hover {
+            background: #5a6268;
+            transform: translateY(-2px);
+            color: white;
+        }
+        
+        .alert-custom {
+            border-radius: 15px;
+            padding: 20px;
+            margin-bottom: 25px;
+            font-weight: 500;
+        }
+        
+        .help-text {
+            font-size: 0.9rem;
+            color: #666;
+            margin-top: 8px;
+            font-style: italic;
+        }
+        
+        .required-star {
+            color: #dc3545;
+            margin-left: 3px;
+        }
+        
+        .form-actions {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 15px;
+            margin-top: 30px;
+        }
+        
+        .scanner-link {
+            background: linear-gradient(45deg, #667eea, #764ba2);
+            color: white;
+            text-decoration: none;
+            border-radius: 15px;
+            padding: 15px 25px;
+            text-align: center;
+            font-weight: 600;
+            transition: all 0.3s ease;
+            display: block;
+        }
+        
+        .scanner-link:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+            color: white;
+        }
+    </style>
+</head>
+<body>
+    <div class="form-container">
+        <!-- En-tête -->
+        <div class="form-header">
+            <h1 class="form-title">✏️ Modifier le Produit</h1>
+            <p class="form-subtitle">Modifiez les informations de base (nom, prix, catégorie)</p>
+        </div>
+
+        <!-- Affichage du stock actuel (lecture seule) -->
+        <div class="current-stock-info">
+            <div class="stock-label">📊 Stock actuel (non modifiable ici)</div>
+            <div class="stock-value">{{ produit.stock }} unité(s)</div>
+            <div class="stock-note">
+                <i class="bi bi-info-circle me-1"></i>
+                Pour modifier le stock, utilisez le scanner
+            </div>
+        </div>
+
+        <!-- Messages d'erreur -->
+        {% if error %}
+        <div class="alert alert-danger alert-custom">
+            <i class="bi bi-exclamation-triangle me-2"></i>{{ error }}
+        </div>
+        {% endif %}
+
+        <!-- Formulaire de modification -->
+        <form method="POST">
+            <!-- Nom du produit -->
+            <div class="form-group">
+                <label class="form-label">
+                    <i class="bi bi-tag me-2"></i>Nom du produit<span class="required-star">*</span>
+                </label>
+                <input type="text" name="nom" class="form-control-modern" 
+                       value="{{ produit.nom }}" 
+                       placeholder="Ex: Écran iPhone 12, Batterie Samsung..."
+                       required maxlength="255">
+                <div class="help-text">
+                    <i class="bi bi-lightbulb me-1"></i>Choisissez un nom clair et descriptif
+                </div>
+            </div>
+
+            <!-- Prix -->
+            <div class="form-group">
+                <label class="form-label">
+                    <i class="bi bi-currency-euro me-2"></i>Prix unitaire<span class="required-star">*</span>
+                </label>
+                <div class="input-group">
+                    <span class="input-group-text">💰</span>
+                    <input type="number" name="prix" class="form-control-modern with-icon" 
+                           value="{{ produit.prix }}" 
+                           step="0.01" min="0" max="9999.99"
+                           placeholder="0.00" required>
+                    <span class="input-group-text">€</span>
+                </div>
+                <div class="help-text">
+                    <i class="bi bi-calculator me-1"></i>Prix de vente unitaire en euros
+                </div>
+            </div>
+
+            <!-- Catégorie -->
+            <div class="form-group">
+                <label class="form-label">
+                    <i class="bi bi-folder me-2"></i>Catégorie
+                </label>
+                <select name="categorie" class="form-control-modern">
+                    <option value="Autre" {% if produit.categorie == 'Autre' %}selected{% endif %}>📦 Autre</option>
+                    {% for cat in categories %}
+                    <option value="{{ cat.nom }}" {% if cat.nom == produit.categorie %}selected{% endif %}>
+                        {{ cat.emoji }} {{ cat.nom }}
+                    </option>
+                    {% endfor %}
+                </select>
+                <div class="help-text">
+                    <i class="bi bi-tags me-1"></i>Choisissez une catégorie pour organiser vos produits
+                </div>
+            </div>
+
+            <!-- Code-barres (lecture seule) -->
+            <div class="form-group">
+                <label class="form-label">
+                    <i class="bi bi-upc-scan me-2"></i>Code-barres (non modifiable)
+                </label>
+                <input type="text" class="form-control-modern" 
+                       value="{{ produit.code_barres }}" 
+                       readonly style="background: #e9ecef; cursor: not-allowed;">
+                <div class="help-text">
+                    <i class="bi bi-lock me-1"></i>Le code-barres ne peut pas être modifié après création
+                </div>
+            </div>
+
+            <!-- Actions -->
+            <div class="form-actions">
+                <button type="submit" class="btn-save">
+                    <i class="bi bi-check-circle me-2"></i>Enregistrer les Modifications
+                </button>
+                
+                <a href="/produits" class="btn-cancel">
+                    <i class="bi bi-arrow-left me-2"></i>Annuler et Retourner
+                </a>
+                
+                <a href="/scanner" class="scanner-link">
+                    <i class="bi bi-qr-code-scan me-2"></i>Gérer le Stock de ce Produit
+                </a>
+            </div>
+        </form>
+
+        <!-- Informations supplémentaires -->
+        <div class="mt-4 p-3" style="background: #f8f9fa; border-radius: 15px;">
+            <h6><i class="bi bi-info-circle me-2"></i>Rappel Important</h6>
+            <ul class="mb-0" style="font-size: 0.9rem; color: #666;">
+                <li><strong>Stock :</strong> Se gère uniquement via le scanner</li>
+                <li><strong>Code-barres :</strong> Ne peut pas être modifié</li>
+                <li><strong>Nom et Prix :</strong> Modifiables à tout moment</li>
+                <li><strong>Catégorie :</strong> Aide à organiser vos produits</li>
+            </ul>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Animation d'entrée
+        document.addEventListener('DOMContentLoaded', function() {
+            const container = document.querySelector('.form-container');
+            container.style.opacity = '0';
+            container.style.transform = 'translateY(30px)';
+            
+            setTimeout(() => {
+                container.style.transition = 'all 0.6s ease';
+                container.style.opacity = '1';
+                container.style.transform = 'translateY(0)';
+            }, 100);
+            
+            // Focus automatique sur le nom
+            document.querySelector('input[name="nom"]').focus();
+        });
+        
+        // Validation en temps réel
+        document.querySelector('input[name="prix"]').addEventListener('input', function() {
+            const value = parseFloat(this.value);
+            if (value < 0) {
+                this.setCustomValidity('Le prix ne peut pas être négatif');
+            } else if (value > 9999.99) {
+                this.setCustomValidity('Le prix ne peut pas dépasser 9999.99€');
+            } else {
+                this.setCustomValidity('');
+            }
+        });
+        
+        // Confirmation avant annulation si des modifications ont été faites
+        let formChanged = false;
+        document.querySelectorAll('input, select').forEach(input => {
+            input.addEventListener('change', () => formChanged = true);
+        });
+        
+        document.querySelector('.btn-cancel').addEventListener('click', function(e) {
+            if (formChanged) {
+                if (!confirm('Vous avez des modifications non sauvegardées. Êtes-vous sûr de vouloir annuler ?')) {
+                    e.preventDefault();
+                }
+            }
+        });
+    </script>
+</body>
+</html>
